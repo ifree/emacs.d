@@ -1,0 +1,28 @@
+* My emacs configuration
+
+  This is my emacs configuration which aims at modular and works for different environment. 
+
+** Environment definition
+
+   You can define your environment like
+   
+   #+begin_elisp 
+   (custom-environment-define
+     "common"
+     :based-on "base"
+     :modules '(lisp
+                blogging
+                company
+                cpp)
+     :exclude-modules '(android clojure))
+   #+end_elisp
+
+   And set environment variable =EMACS-ENV-NAME-LIST= to load target Envs.
+
+** Module difinition
+
+   Each elisp file that starts with "init-" inside modules directory treats as a module.
+
+** Notes
+   
+   This configuration was inspired by [[https://github.com/purcell/emacs.d][Purcell's]] and some useful modules are copied from it.

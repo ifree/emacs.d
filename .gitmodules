@@ -1,0 +1,12 @@
+[submodule "vendor/emacs-online-judge"]
+	path = vendor/emacs-online-judge
+	url = https://github.com/ifree/emacs-online-judge.git
+[submodule "vendor/file-template"]
+	path = vendor/file-template
+	url = https://github.com/ifree/emacs-file-template.git
+[submodule "vendor/leetcode"]
+	path = vendor/leetcode
+	url = https://github.com/ifree/leetcode.el.git
+[submodule "vendor/playground"]
+	path = vendor/playground
+	url = https://github.com/ifree/emacs-code-playground.git
