@@ -12,3 +12,5 @@ ido.last
 custom.el
 
 /history
+/irony/
+/semanticdb/

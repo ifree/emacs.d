@@ -47,13 +47,15 @@ optional base module by specify a `:based-on' property.  eg:
 ;;;###autoload
 (defun custom-environment-load (name)
   "Load environment by NAME."
-  (if-let ((sym (intern-soft (concat custom-environment--prefix name)))
-           (modules (custom-environment--load-modules sym)))
-      (dolist (m modules)
-        (if-let ((module-sym (intern (concat "init-" (symbol-name m)))))
-            (require module-sym)
-          (error "Symbol init-%s doesn't exists" (symbol-name m))))
-    (error "Environment doesn't exists!")))
+  (let* ((sym (intern-soft (concat custom-environment--prefix name)))
+	 (modules (custom-environment--load-modules sym)))
+    (if (and sym modules)
+	(dolist (m modules)
+	  (let ((module-sym (intern (concat "init-" (symbol-name m)))))
+	    (if module-sym
+		(require module-sym)
+	      (error "Symbol init-%s doesn't exists" (symbol-name m)))))
+      (error "Environment doesn't exists!"))))
 
 
 (provide 'custom-environment)

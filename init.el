@@ -44,11 +44,12 @@
 (require 'home-env)
 (require 'work-env)
 
-;; You can override your environment by set environment variable `EMACS-ENV-NAME'
-(if-let ((envs (getenv "EMACS-ENV-NAME-LIST")))
-    (dolist (env (split-string envs))
-      (custom-environment-load env))
-  (custom-environment-load "common"))
+;; You can override your environment by set environment variable `EMACS_ENV_NAME_LIST'
+(let ((envs (getenv "EMACS_ENV_NAME_LIST")))
+  (if envs
+     (dolist (env (split-string envs))
+       (custom-environment-load env))
+   (custom-environment-load "common")))
 
 
 ;; load customize file
