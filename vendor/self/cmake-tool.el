@@ -57,7 +57,7 @@
                       val
                       "\\).*?)\\|list[ \t]*([ \t]*append[ \t]+"
                       name "[ \t]+.*?\\(" val "\\).*?)")))
-    (re-search-forward reg)
+    (re-search-forward reg nil t)
     (when (match-beginning 1)
       (replace-match "" t nil nil 1))
     (when (match-beginning 2)
@@ -102,7 +102,7 @@
           ;; only search once
           (when (re-search-forward (concat "-\\*-.*\\("
                                            cmake-tool-target-var-name
-                                           ":\s*\\([^\s]+\\)\s*\\)"))
+                                           ":\s*\\([^\s]+\\)\s*\\)") nil t)
             
             (funcall func 
                      (match-string-no-properties 2)
@@ -117,7 +117,7 @@
 
 (defun cmake-tool-before-file-deleted ()
   (interactive)
-  (cmake-tool-modify-list nil) nil)
+  (cmake-tool-modify-list nil))
 
 
 (provide 'cmake-tool)
