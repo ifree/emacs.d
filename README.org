@@ -6,7 +6,7 @@
 
    You can define your environment like
    
-   #+begin_elisp 
+   #+BEGIN_SRC emacs-lisp 
    (custom-environment-define
      "common"
      :based-on "base"
@@ -15,9 +15,9 @@
                 company
                 cpp)
      :exclude-modules '(android clojure))
-   #+end_elisp
+   #+END_SRC
 
-   And set environment variable =EMACS-ENV-NAME-LIST= to load target Envs.
+   And set environment variable =EMACS_ENV_NAME_LIST= to load target Envs.
 
 ** Module difinition
 
