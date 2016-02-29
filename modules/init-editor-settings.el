@@ -64,12 +64,17 @@
 (diminish 'undo-tree-mode)
 
 ;; guide-key
+(require-package 'guide-key)
 (require-package 'guide-key-tip)
-(require 'guide-key-tip)
+(if window-system
+    (progn (require 'guide-key-tip)
+	   (setq guide-key-tip/enabled t))
+  (require 'guide-key))
+
 (setq guide-key/guide-key-sequence '("C-x" "C-c" "C-x 4" "C-x 5" "C-c ;" "C-c ; f" "C-c ' f" "C-x n" "C-x C-r" "C-x r"))
 (setq guide-key/recursive-key-sequence-flag t)
 (guide-key-mode 1)
-(setq guide-key-tip/enabled t)
+
 (diminish 'guide-key-mode)
 
 (require-package 'regex-tool)

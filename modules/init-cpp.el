@@ -13,7 +13,7 @@
 (require-package 'cmake-mode)
 (require-package 'rtags)
 (require-package 'sr-speedbar)
-(require-package 'function-args)
+;(require-package 'function-args)
 
 (require 'compile)
 (require 'sr-speedbar)
@@ -21,7 +21,7 @@
 
 (unless (boundp 'byte-compile-not-obsolete-vars)
     (defvar byte-compile-not-obsolete-vars nil))
-(require 'function-args)
+;(require 'function-args)
 (require 'cmake-tool)
 
 ;;; cmake tools
@@ -31,7 +31,7 @@
 (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
 
 ;; fa
-(fa-config-default)
+;(fa-config-default)
 
 ;;; company-rtags
 ;; (add-to-list 'company-backends 'company-rtags)
