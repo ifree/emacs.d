@@ -23,8 +23,10 @@
 ;;----------------------------------------------------------------------------
 ;; When splitting window, show (other-buffer) in the new window
 ;;----------------------------------------------------------------------------
+;;; since I rarely use lower version of emacs, lexcial binding is the best option
+(setq lexical-binding t)
 (defun split-window-func-with-other-buffer (split-function)
-  (lexical-let ((s-f split-function))
+  (let ((s-f split-function))
     (lambda (&optional arg)
       "Split this window and switch to the new window unless ARG is provided."
       (interactive "P")

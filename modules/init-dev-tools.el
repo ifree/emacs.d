@@ -19,8 +19,6 @@
 ;;       "~/Dev/projects/file-template"
 ;;       )
 
-(provide 'init-file-template)
-
 (provide 'init-dev-tools)
 
 ;;; init-dev-tools.el ends here

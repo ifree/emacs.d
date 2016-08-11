@@ -63,6 +63,10 @@ locate PACKAGE."
 (setq package-enable-at-startup nil)
 (package-initialize)
 
+;; init exec path
+(require-package 'exec-path-from-shell)
+
+(exec-path-from-shell-initialize)
 
 (provide 'init-elpa)
 

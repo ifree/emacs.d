@@ -8,7 +8,7 @@
 (require-package 'irony)
 (require-package 'irony-eldoc)
 (require-package 'company-irony)
-(require-package 'company-c-headers)
+(require-package 'company-irony-c-headers)
 (require-package 'flycheck-irony)
 (require-package 'cmake-mode)
 (require-package 'rtags)
@@ -82,7 +82,7 @@
 (eval-after-load 'company
   '(progn
     (add-to-list 'company-backends 'company-irony)
-    (add-to-list 'company-backends 'company-c-headers)))
+    (add-to-list 'company-backends 'company-irony-c-headers)))
 ; flycheck
 (eval-after-load 'flycheck
   '(add-hook 'flycheck-mode-hook #'flycheck-irony-setup))
