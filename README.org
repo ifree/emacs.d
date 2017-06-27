@@ -1,0 +1,7 @@
+* My emacs configuration
+
+  This is my emacs configuration which aims at modular and works for different environment. 
+
+** Environment definition
+
+   Just set environment variable =EMACS_ENV_NAME= to load target Envs (see my example)
