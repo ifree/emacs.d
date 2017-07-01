@@ -56,9 +56,7 @@
   (dolist (hook '(prog-mode-hook html-mode-hook css-mode-hook))
     (add-hook hook 'highlight-symbol-mode)
     (add-hook hook 'highlight-symbol-nav-mode))
-  (add-hook 'org-mode-hook 'highlight-symbol-nav-mode)
-  
-  )
+  (add-hook 'org-mode-hook 'highlight-symbol-nav-mode))
 
 
 ;;; undo tree
@@ -79,7 +77,7 @@
   (setq guide-key/recursive-key-sequence-flag t))
 
 (use-package guide-key-tip
-  :if window-system
+  :if (memq window-system '(mac ns w32)) ;have some issue with X
   :ensure t
   :config
   (setq guide-key-tip/enabled t))
@@ -178,7 +176,6 @@
   (diminish 'company-mode "CMP"))
 
 ;; ido (helm next time
-(use-package flx-ido :ensure t)
 (use-package ido
   :init
   (ido-mode t)
@@ -193,6 +190,7 @@
   ;; disable search file in other dir if it not exists
   (setq ido-auto-merge-work-directories-length -1)
   :config
+  (use-package flx-ido :ensure t)
   (use-package recentf)
   (add-hook 'ido-setup-hook (lambda () (define-key ido-completion-map [up] 'previous-history-element)))
   

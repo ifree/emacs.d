@@ -112,11 +112,22 @@
     (cmake-ide--mode-hook))
 
   (add-hook 'c-mode-hook #'my-cmake-ide-setup)
-  (add-hook 'c++-mode-hook #'my-cmake-ide-setup))
+  (add-hook 'c++-mode-hook #'my-cmake-ide-setup)
+  :bind
+  ([f7] . cmake-ide-compile))
+
+;;; gdb
+(use-package gdb-mi
+  :init
+  (setq
+   ;; use gdb-many-windows by default
+   gdb-many-windows t
+   ;; Non-nil means display source file containing the main routine at startup
+   gdb-show-main t))
 
 
 ;; TODO: clang format
-;; TODO: projectile-find-file-at-point
+;; TODO: projectile-find-file-at-point(maybe `rtags-find-file` is enough)
 
 (provide 'cpp-config)
 
