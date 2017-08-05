@@ -19,13 +19,10 @@
   (recentf-mode 1)
   :config
   (setq recentf-max-saved-items 1000
-	recentf-exclude '(
-			  "^/tmp/pg*"
+	recentf-exclude '("^/tmp/pg*"
 			  "^pg*"
 			  "/tmp/"
-			  "/ssh:"
-			  )))
-
+			  "/ssh:")))
 
 
 (fset 'yes-or-no-p 'y-or-n-p)
@@ -77,7 +74,7 @@
   (setq guide-key/recursive-key-sequence-flag t))
 
 (use-package guide-key-tip
-  :if (memq window-system '(mac ns w32)) ;have some issue with X
+  :if window-system ;have some issue with X, x-show-tip have issue with HighDPI display....
   :ensure t
   :config
   (setq guide-key-tip/enabled t))
@@ -210,6 +207,10 @@
   (setq smex-save-file (expand-file-name ".smex-items" user-emacs-directory))
   (global-set-key [remap execute-extended-command] 'smex))
 
+;; revert buffer after image changed 
+(use-package image-mode
+  :init
+  (add-hook 'image-mode-hook 'auto-revert-mode))
 
 (provide 'editor-config)
 

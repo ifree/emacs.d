@@ -1,5 +1,5 @@
+;; -*- lexical-binding: t -*-
 ;;; window-config.el --- window management
-
 ;;; Commentary:
 ;; 
 
