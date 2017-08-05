@@ -31,6 +31,11 @@
 	    (eshell arg))
 	(select-window eshell-win)))))
 
+(use-package company-quickhelp
+  :ensure t
+  :config
+  (company-quickhelp-mode 1))
+
 (use-package cmake-mode
   :ensure t)
 
