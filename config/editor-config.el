@@ -130,7 +130,10 @@
       (treemacs-toggle)))
   
   :bind
-  ([f8] . my-treemacs-projectile-toggle))
+  (([f8] . my-treemacs-projectile-toggle)
+   :map treemacs-mode-map
+   ([mouse-1] . treemacs-visit-file-no-split)
+   ))
   
 ;; fonts
 (use-package default-text-scale
