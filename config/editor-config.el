@@ -194,7 +194,7 @@
   (use-package recentf)
   (add-hook 'ido-setup-hook (lambda () (define-key ido-completion-map [up] 'previous-history-element)))
   
-  (use-package ido-ubiquitous
+  (use-package ido-completing-read+
     :ensure t
     :init (ido-ubiquitous-mode t))
 
