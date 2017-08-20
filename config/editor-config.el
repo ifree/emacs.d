@@ -131,10 +131,16 @@
   
   :bind
   (([f8] . my-treemacs-projectile-toggle)
-   :map treemacs-mode-map
-   ([mouse-1] . treemacs-visit-file-no-split)
+   ;; :map treemacs-mode-map
+   ;; ([mouse-1] . treemacs-visit-file-no-split)
    ))
-  
+
+;; yasnippet
+(use-package yasnippet
+  :ensure t
+  :config
+  (yas-global-mode 1))
+
 ;; fonts
 (use-package default-text-scale
   :ensure t

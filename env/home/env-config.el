@@ -9,6 +9,7 @@
 
 (use-package coding-config :demand)
 (use-package cpp-config :demand)
+(use-package org-config :demand)
 
 (provide 'env-config)
 
