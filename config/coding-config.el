@@ -23,6 +23,11 @@
 ;; Load .el if newer than corresponding .elc
 (setq load-prefer-newer t)
 
+(use-package company-quickhelp
+  :ensure t
+  :config
+  (company-quickhelp-mode 1))
+
 (use-package hl-sexp
   :ensure t)
 
