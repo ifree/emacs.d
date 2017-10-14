@@ -112,28 +112,42 @@
   :ensure t
   :defer t
   :config
-  (setq treemacs-header-function            #'treemacs--create-header-projectile
-        treemacs-follow-after-init          t
-        treemacs-width                      35
-        treemacs-indentation                2
-        treemacs-git-integration            t
-        treemacs-change-root-without-asking nil
-        treemacs-sorting                    'alphabetic-desc
-        treemacs-show-hidden-files          t
-        treemacs-never-persist              nil)
+  (setq treemacs-follow-after-init          t
+	treemacs-width                      35
+	treemacs-indentation                2
+	treemacs-git-integration            t
+	treemacs-collapse-dirs              3
+	treemacs-silent-refresh             nil
+	treemacs-change-root-without-asking nil
+	treemacs-sorting                    'alphabetic-desc
+	treemacs-show-hidden-files          t
+	treemacs-never-persist              nil
+	treemacs-is-never-other-window      nil
+	treemacs-goto-tag-strategy          'refetch-index)
+
   (treemacs-follow-mode t)
   (treemacs-filewatch-mode t)
-  
-  (defun my-treemacs-projectile-toggle ()
-    (interactive)
-    (let ((default-directory (if (projectile-project-p) (projectile-project-root) default-directory)))
-      (treemacs-toggle)))
-  
   :bind
-  (([f8] . my-treemacs-projectile-toggle)
-   ;; :map treemacs-mode-map
-   ;; ([mouse-1] . treemacs-visit-file-no-split)
-   ))
+  (:map global-map
+        ([f8]        . treemacs-toggle)
+        ("M-0"       . treemacs-select-window)
+        ("C-c 1"     . treemacs-delete-other-windows)
+;        ("M-m ft"    . treemacs-toggle)
+;        ("M-m fT"    . treemacs)
+;        ("M-m f C-t" . treemacs-find-file)
+	))
+
+(use-package treemacs-projectile
+  :defer t
+  :ensure t
+  :config
+  (setq treemacs-header-function #'treemacs-projectile-create-header)
+  :bind (:map global-map
+;              ("M-m fP" . treemacs-projectile)
+;              ("M-m fp" . treemacs-projectile-toggle)
+	      ))
+
+
 
 ;; yasnippet
 (use-package yasnippet

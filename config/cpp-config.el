@@ -31,6 +31,11 @@
 	    (eshell arg))
 	(select-window eshell-win)))))
 
+(use-package google-c-style
+  :ensure t
+  :init
+  (add-hook 'c-mode-common-hook 'google-set-c-style))
+
 (use-package cmake-mode
   :ensure t)
 
