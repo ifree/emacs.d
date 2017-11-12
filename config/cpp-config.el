@@ -8,20 +8,24 @@
 (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
 
 (use-package eshell
+  :bind
+  (:map global-map
+        ([f9]        . eshell-adjust))
   :init
   (add-hook 'eshell-mode-hook 'compilation-shell-minor-mode)
 ;  (add-hook 'eshell-after-prompt-hook 'eshell-parse-compilation)
   (defun eshell-adjust (&optional arg)
     (interactive)
-    (let* ((buf-name (cond ((numberp arg)
-			    (format "%s<%d>"
-				    eshell-buffer-name
-				    arg))
-			   (t
-			    eshell-buffer-name)
-			   ))
-	   (buf (get-buffer buf-name))
-	   (eshell-win (get-buffer-window buf)))
+    (let* ((buf-name (if (boundp 'eshell-buffer-name)
+			 (cond ((numberp arg)
+				   (format "%s<%d>"
+					   eshell-buffer-name
+					   arg))
+				  (t
+				   eshell-buffer-name))
+		       nil))
+	   (buf (if buf-name (get-buffer buf-name)))
+	   (eshell-win (if buf (get-buffer-window buf))))
       ;; if buffer is nil or in background, split window vertically
       (if (not (and eshell-win buf))
 	  (let ((win (split-window-below -8))
