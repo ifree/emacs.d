@@ -97,6 +97,8 @@
 		dired-dwim-target t))
 
 (use-package diff-hl
+  :ensure t
+  :defer t
   :config
   (add-hook 'dired-mode-hook 'diff-hl-dired-mode))
 
@@ -106,52 +108,70 @@
   :ensure t
   :config
   (setq projectile-mode-line
-        '(:eval (format " Projectile[%s(%s)]"
+        '(:eval (format " Projectile[%s]"
                         (projectile-project-name))))
   
-  (projectile-global-mode))
+  (projectile-global-mode)
+  (define-key projectile-mode-map (kbd "s-p") 'projectile-command-map)
+  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
 
 ;; treemacs
 (use-package treemacs
   :ensure t
   :defer t
   :config
-  (setq treemacs-follow-after-init          t
-	treemacs-width                      35
-	treemacs-indentation                2
-	treemacs-git-integration            t
-	treemacs-collapse-dirs              3
-	treemacs-silent-refresh             nil
-	treemacs-change-root-without-asking nil
-	treemacs-sorting                    'alphabetic-desc
-	treemacs-show-hidden-files          t
-	treemacs-never-persist              nil
-	treemacs-is-never-other-window      nil
-	treemacs-goto-tag-strategy          'refetch-index)
+  (progn
+    (setq treemacs-collapse-dirs              (if (executable-find "python") 3 0)
+          treemacs-deferred-git-apply-delay   0.5
+          treemacs-display-in-side-window     t
+          treemacs-file-event-delay           5000
+          treemacs-file-follow-delay          0.2
+          treemacs-follow-after-init          t
+          treemacs-follow-recenter-distance   0.1
+          treemacs-goto-tag-strategy          'refetch-index
+          treemacs-indentation                2
+          treemacs-indentation-string         " "
+          treemacs-is-never-other-window      nil
+          treemacs-no-png-images              nil
+          treemacs-project-follow-cleanup     nil
+          treemacs-persist-file               (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+          treemacs-recenter-after-file-follow nil
+          treemacs-recenter-after-tag-follow  nil
+          treemacs-show-hidden-files          t
+          treemacs-silent-filewatch           nil
+          treemacs-silent-refresh             nil
+          treemacs-sorting                    'alphabetic-desc
+          treemacs-space-between-root-nodes   t
+          treemacs-tag-follow-cleanup         t
+          treemacs-tag-follow-delay           1.5
+          treemacs-width                      35)
 
-  (treemacs-follow-mode t)
-  (treemacs-filewatch-mode t)
+    ;; The default width and height of the icons is 22 pixels. If you are
+    ;; using a Hi-DPI display, uncomment this to double the icon size.
+    ;;(treemacs-resize-icons 44)
+
+    (treemacs-follow-mode t)
+    (treemacs-filewatch-mode t)
+    (treemacs-fringe-indicator-mode t)
+    (pcase (cons (not (null (executable-find "git")))
+                 (not (null (executable-find "python3"))))
+      (`(t . t)
+       (treemacs-git-mode 'extended))
+      (`(t . _)
+       (treemacs-git-mode 'simple))))
   :bind
   (:map global-map
-        ([f8]        . treemacs-toggle)
+        ([f8]        . treemacs)
         ("M-0"       . treemacs-select-window)
-        ("C-c 1"     . treemacs-delete-other-windows)
-;        ("M-m ft"    . treemacs-toggle)
-;        ("M-m fT"    . treemacs)
-;        ("M-m f C-t" . treemacs-find-file)
-	))
+        ("C-c t 1"   . treemacs-delete-other-windows)
+	("C-x t t"   . treemacs)
+	("C-x t B"   . treemacs-bookmark)
+        ("C-x t C-t" . treemacs-find-file)
+        ("C-x t M-t" . treemacs-find-tag)))
 
 (use-package treemacs-projectile
-  :defer t
-  :ensure t
-  :config
-  (setq treemacs-header-function #'treemacs-projectile-create-header)
-  :bind (:map global-map
-;              ("M-m fP" . treemacs-projectile)
-;              ("M-m fp" . treemacs-projectile-toggle)
-	      ))
-
-
+  :after treemacs projectile
+  :ensure t)
 
 ;; yasnippet
 (use-package yasnippet

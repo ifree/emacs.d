@@ -43,71 +43,9 @@
 (use-package cmake-mode
   :ensure t)
 
-(use-package rtags
-  :ensure t
-  :init
-  (setq rtags-autostart-diagnostics t)
-  (setq rtags-completions-enabled t)
-  :config
-  (rtags-enable-standard-keybindings))
-
-(use-package company-rtags
-  :ensure t)
-
-(use-package irony-eldoc
-  :ensure t)
-
-(use-package irony
-  :ensure t
-  :init
-  (add-hook 'c++-mode-hook 'irony-mode)
-  (add-hook 'c-mode-hook 'irony-mode)
-  (add-hook 'irony-mode-hook #'irony-eldoc)
-  (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
-
-  ;; Windows performance tweaks
-  ;;
-  (when (boundp 'w32-pipe-read-delay)
-    (setq w32-pipe-read-delay 0))
-  ;; Set the buffer size to 64K on Windows (from the original 4K)
-  (when (boundp 'w32-pipe-buffer-size)
-    (setq irony-server-w32-pipe-buffer-size (* 64 1024))))
-
-(use-package company-irony
-  :ensure t
-  :init
-  (add-hook 'irony-mode-hook 'company-irony-setup-begin-commands))
-
-(use-package company-irony-c-headers
-  :ensure t)
-
-(use-package company
-  :ensure t
-  :config
-  ;; delete semantic backend
-  (setq company-backends (delete 'company-semantic company-backends))
-  
-  (add-to-list
-   'company-backends 'company-rtags)
-  (add-to-list
-   'company-backends 'company-irony)
-  (add-to-list
-   'company-backends 'company-irony-c-headers))
-
-(use-package flycheck-irony
-  :ensure t)
-
-(use-package flycheck
-  :init
-  (add-hook 'c++-mode-hook 'flycheck-mode)
-  (add-hook 'c-mode-hook 'flycheck-mode)
-  :config
-;  (flycheck-select-checker 'rtags)
-  (add-hook 'flycheck-mode-hook #'flycheck-irony-setup))
-
 (use-package cmake-ide
   :ensure t
-  :config
+  :init
   (use-package projectile :ensure t)
 ;  (cmake-ide-setup)
   (defun my-cmake-ide-setup ()
@@ -118,12 +56,40 @@
 	(put 'cmake-ide-build-dir 'safe-local-variable 'stringp)
 	(setq cmake-ide-project-dir (projectile-project-root))
 	(setq cmake-ide-build-dir (concat cmake-ide-project-dir "build")))
-    (cmake-ide--mode-hook))
+    (cmake-ide-setup))
 
   (add-hook 'c-mode-hook #'my-cmake-ide-setup)
   (add-hook 'c++-mode-hook #'my-cmake-ide-setup)
   :bind
   ([f7] . cmake-ide-compile))
+
+;;; lsp
+;;; or clangd later
+(defun cquery//enable ()  
+  (condition-case nil
+      (lsp-cquery-enable)
+    (user-error nil)))
+
+;;; lsp-ui-flycheck
+
+(use-package cquery
+  :ensure t
+  :after lsp-mode
+  :commands lsp-cquery-enable
+  :init
+  (add-hook 'c-mode-hook #'cquery//enable)
+  (add-hook 'c++-mode-hook #'cquery//enable))
+
+(use-package company-lsp
+  :ensure t
+  :after lsp-mode
+  :config
+  (progn
+    (push 'company-lsp company-backends)
+    (setq company-transformers nil
+	  company-lsp-async t
+	  company-lsp-cache-candidates nil)))
+
 
 ;;; gdb
 (use-package gdb-mi

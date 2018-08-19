@@ -69,6 +69,23 @@
   :init
   (global-flycheck-mode))
 
+(use-package lsp-mode
+  :ensure t
+  :init
+  ;; prog-mode-hook conflicts with lsp-cquery, turn it off
+  ;; (add-hook 'prog-mode-hook 'lsp-mode)
+    )
+
+(use-package lsp-ui
+  :ensure t ; comes with lsp-mode
+  :after lsp-mode
+  :config
+  (add-hook 'lsp-mode-hook 'lsp-ui-mode)
+  (setq
+   lsp-ui-sideline-enable t
+   lsp-ui-doc-position 'top
+   lsp-ui-doc-header nil
+   lsp-ui-doc-include-signature nil))
 
 (use-package magit
   :ensure t)

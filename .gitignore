@@ -10,6 +10,7 @@ server/
 recentf
 ido.last
 custom.el
+session.*
 
 /history
 /irony/

@@ -13,6 +13,8 @@
   ;; racer
   (use-package racer
     :ensure t)
+  (use-package lsp-rust
+    :after lsp-mode)
   (use-package flycheck-rust
     :ensure t)
   (setq racer-cmd "~/.cargo/bin/racer") ;; Rustup binaries PATH
