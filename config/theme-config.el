@@ -25,8 +25,8 @@
            "%b")))
       display-time-24hr-format t)
 
-(add-to-list 'default-frame-alist '(width . 160))
-(add-to-list 'default-frame-alist '(height . 60))
+(add-to-list 'default-frame-alist '(width . 120))
+(add-to-list 'default-frame-alist '(height . 40))
 
 (defconst frei/font-candidates
   '("Inconsolata" "Cascadia Code" "Menlo" "DejaVu Sans Mono" "Consolas")
@@ -47,35 +47,47 @@
 (frei/apply-default-font)
 (add-hook 'after-make-frame-functions #'frei/apply-default-font)
 
+(defun frei/opacity-parameter (&optional frame)
+  "Return the frame parameter that controls the opacity of FRAME.
+Only X and PGTK can keep the text opaque while the background fades,
+so other systems fall back to the whole-frame `alpha' parameter."
+  (if (memq (window-system frame) '(x pgtk))
+      'alpha-background
+    'alpha))
+
+(defun frei/opacity ()
+  "Return the current opacity of the selected frame as a number."
+  (let ((value (frame-parameter nil (frei/opacity-parameter))))
+    (or (if (consp value) (car value) value) 100)))
+
 (defun frei/adjust-opacity (increment)
-  "Adjust the selected frame background opacity by INCREMENT."
+  "Adjust the selected frame opacity by INCREMENT."
   (interactive "nOpacity increment: ")
   (unless (display-graphic-p)
     (user-error "Opacity is only available in graphical frames"))
-  (let* ((old-value
-          (or (frame-parameter nil 'alpha-background) 100))
-         (new-value
-          (max frame-alpha-lower-limit
-               (min 100 (+ old-value increment)))))
-    (set-frame-parameter nil 'alpha-background new-value)))
+  (set-frame-parameter
+   nil (frei/opacity-parameter)
+   (max frame-alpha-lower-limit
+        (min 100 (+ (frei/opacity) increment)))))
 
-(global-set-key
- (kbd "M-C-8")
- (lambda ()
-   (interactive)
-   (frei/adjust-opacity -2)))
+(defun frei/decrease-opacity ()
+  "Make the selected frame slightly more transparent."
+  (interactive)
+  (frei/adjust-opacity -2))
 
-(global-set-key
- (kbd "M-C-9")
- (lambda ()
-   (interactive)
-   (frei/adjust-opacity 2)))
+(defun frei/increase-opacity ()
+  "Make the selected frame slightly more opaque."
+  (interactive)
+  (frei/adjust-opacity 2))
 
-(global-set-key
- (kbd "M-C-0")
- (lambda ()
-   (interactive)
-   (set-frame-parameter nil 'alpha-background 100)))
+(defun frei/reset-opacity ()
+  "Make the selected frame fully opaque."
+  (interactive)
+  (set-frame-parameter nil (frei/opacity-parameter) 100))
+
+(global-set-key (kbd "M-C-8") #'frei/decrease-opacity)
+(global-set-key (kbd "M-C-9") #'frei/increase-opacity)
+(global-set-key (kbd "M-C-0") #'frei/reset-opacity)
 
 (display-time-mode 1)
 (column-number-mode 1)
