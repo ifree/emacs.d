@@ -286,15 +286,21 @@
     (setq ispell-program-name spell-checker)
     (add-hook 'prog-mode-hook #'flyspell-prog-mode)))
 
+;; Git prints non-ASCII file names as octal escapes unless told otherwise,
+;; which shows up as \NNN in command output and completion candidates.
+(setenv "GIT_CONFIG_COUNT" "1")
+(setenv "GIT_CONFIG_KEY_0" "core.quotepath")
+(setenv "GIT_CONFIG_VALUE_0" "false")
+
 (when (eq system-type 'windows-nt)
   ;; Compacting font caches causes pauses with CJK fonts, and the default
   ;; pipe settings make subprocesses such as git and rg slow.
   (setq inhibit-compacting-font-caches t
         w32-pipe-read-delay 0
         w32-pipe-buffer-size (* 64 1024)
-        ;; Keep auto-detection for process output so GBK output from
-        ;; cmd.exe still decodes correctly.
-        default-process-coding-system '(undecided-dos . utf-8-unix)))
+        ;; Auto-detection would treat the NUL separated output of ripgrep
+        ;; as binary, so decode process output as UTF-8.
+        default-process-coding-system '(utf-8-dos . utf-8-unix)))
 
 (use-package server
   :ensure nil
