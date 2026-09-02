@@ -5,6 +5,7 @@
 
 ;;; Code:
 (require 'cpp-tool)
+(require 'c-ts-google-style)
 
 (defvar frei/state-directory
   (expand-file-name "var/" user-emacs-directory)
@@ -32,6 +33,12 @@
            (treesit-language-available-p 'cpp))
   (add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
   (add-hook 'c++-ts-mode-hook #'frei/cpp-eglot-ensure))
+
+;; `google-c-style' only knows cc-mode, so give the tree-sitter modes an
+;; equivalent indentation style.
+(use-package c-ts-mode
+  :ensure nil
+  :hook (c-ts-base-mode . frei/c-ts-google-setup))
 
 (use-package eglot
   :ensure nil
