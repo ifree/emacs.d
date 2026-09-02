@@ -1,68 +1,65 @@
-;;; init.el --- Emacs config entry point
+;;; init.el --- Emacs configuration entry point  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; multiple environment support
-;; simplified config with `use-package`
+;; A small entry point with environment-specific modules.
 
 ;;; Code:
-(when (< emacs-major-version 24)
-  (message "Your emacs is too old, please upgrade it."))
+(when (< emacs-major-version 30)
+  (error "This configuration requires Emacs 30 or newer"))
 
-;; global variables
-(unless (boundp 'user-emacs-directory)
-  (defvar user-emacs-directory "~/.emacs.d"))
+(require 'package)
 
-;; gc
-(setq gc-cons-threshold (* 128 1024 1024))
+(defconst frei/config-directory
+  (file-name-as-directory
+   (file-name-directory
+    (or load-file-name user-init-file user-emacs-directory)))
+  "Root directory of this Emacs configuration.")
 
-;; package archives
-(setq package-archives '(("gnu" . "https://elpa.gnu.org/packages/")
-                         ("marmalade" . "https://marmalade-repo.org/packages/")
-                         ("melpa" . "https://melpa.org/packages/")))
+(setq package-archives
+      '(("gnu" . "https://elpa.gnu.org/packages/")
+        ("nongnu" . "https://elpa.nongnu.org/nongnu/")
+        ("melpa" . "https://melpa.org/packages/"))
+      package-archive-priorities
+      '(("gnu" . 30)
+        ("nongnu" . 20)
+        ("melpa" . 10)))
 
-;; init use-package
-(package-initialize)
-(unless (package-installed-p 'use-package)
-  (package-refresh-contents)
-  (package-install 'use-package))
+(setq custom-file (expand-file-name "custom.el" frei/config-directory))
+(load custom-file 'noerror 'nomessage)
 
-(eval-when-compile
-  (require 'use-package))
-(defvar use-package-verbose t)
-;(setq use-package-debug t)
+(add-to-list 'load-path (expand-file-name "config/" frei/config-directory))
+(add-to-list 'load-path (expand-file-name "lisp/" frei/config-directory))
 
-(use-package diminish
-  :ensure t)
+(require 'use-package)
+(setq use-package-verbose nil)
 
-(use-package bind-key
-  :ensure t)
+(unless (eq system-type 'windows-nt)
+  (use-package exec-path-from-shell
+    :ensure t
+    :if (or (daemonp)
+            (memq window-system '(mac ns x pgtk)))
+    :custom
+    (exec-path-from-shell-variables
+     '("EMACS_ENV_NAME" "SSH_AUTH_SOCK" "SSH_AGENT_PID"
+       "GPG_AGENT_INFO" "LANG" "LC_CTYPE"))
+    :config
+    (exec-path-from-shell-initialize)))
 
-(use-package exec-path-from-shell
-  :if (memq window-system '(mac ns x))
-  :ensure t
-  :config
-  (dolist (var '("EMACS_ENV_NAME" "SSH_AUTH_SOCK" "SSH_AGENT_PID" "GPG_AGENT_INFO" "LANG" "LC_CTYPE"))
-    (add-to-list 'exec-path-from-shell-variables var))
-  (exec-path-from-shell-initialize))
+(defconst frei/environment-name
+  (or (getenv "EMACS_ENV_NAME") "default")
+  "Name of the environment-specific configuration to load.")
 
+(unless (member frei/environment-name '("default" "home" "work"))
+  (error "Unknown Emacs environment: %s" frei/environment-name))
 
-;; load customize file
-(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
-(when (file-exists-p custom-file)
-  (load custom-file))
-
-;;; customize stuff
-;; custom load-path
-(add-to-list 'load-path (concat user-emacs-directory "config/"))
-(add-to-list 'load-path (concat user-emacs-directory "lisp/"))
-
-;; You can override your environment by set environment variable `EMACS_ENV_NAME'
-(defconst EMACS_ENV_NAME (or (getenv "EMACS_ENV_NAME") "default"))
-
-;; load environment config
-(use-package env-config :demand :load-path (lambda () (list (concat "env/" EMACS_ENV_NAME "/"))))
-
-
+(let ((environment-directory
+       (expand-file-name
+        (format "env/%s/" frei/environment-name)
+        frei/config-directory)))
+  (unless (file-directory-p environment-directory)
+    (error "Missing Emacs environment directory: %s" environment-directory))
+  (add-to-list 'load-path environment-directory)
+  (require 'env-config))
 
 (provide 'init)
 

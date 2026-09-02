@@ -1,20 +1,36 @@
-;;; cpp-tool.el --- cpp utility functions
+;;; cpp-tool.el --- C++ utility commands  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; 
+;; A small single-file compile command for quick experiments.
 
-;;;###autoload
-(defun compile-this-file (file)
-  (interactive "fFile")
-  (let ((cmd (format "%s -std=c++14 -o %s %s %s"
-		     (or (getenv "CC") "clang++")
-		     (file-name-sans-extension file)
-		     (or (getenv "CPPFLAGS") "-Wall -g")
-		     file
-		     )))
-    (compile cmd)))
+;;; Code:
+(defun frei/compile-current-cpp-file (&optional file)
+  "Compile FILE, or the current buffer file, as a C++20 program."
+  (interactive)
+  (let* ((source-file
+          (expand-file-name
+           (or file
+               buffer-file-name
+               (user-error "The current buffer is not visiting a file"))))
+         (compiler (or (getenv "CXX") "clang++"))
+         (flags
+          (split-string-and-unquote
+           (or (getenv "CXXFLAGS")
+               "-std=c++20 -Wall -Wextra -g")))
+         (output-file
+          (concat
+           (file-name-sans-extension source-file)
+           (if (eq system-type 'windows-nt) ".exe" "")))
+         (arguments
+          (append
+           (list compiler)
+           flags
+           (list "-o" output-file source-file)))
+         (command
+          (mapconcat #'shell-quote-argument arguments " ")))
+    (compile command)))
 
-
+(defalias 'compile-this-file #'frei/compile-current-cpp-file)
 
 (provide 'cpp-tool)
 

@@ -1,15 +1,13 @@
-;;; env-config.el --- home config
+;;; env-config.el --- Home environment  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; 
-
+;; Shared configuration plus programming and Org support.
 
 ;;; Code:
-(load (expand-file-name "env/default/env-config.el" user-emacs-directory) nil t)
-
-(use-package coding-config :demand)
-(use-package cpp-config :demand)
-(use-package org-config :demand)
+(require 'base-config)
+(require 'coding-config)
+(require 'cpp-config)
+(require 'org-config)
 
 (provide 'env-config)
 

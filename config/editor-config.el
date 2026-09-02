@@ -1,263 +1,242 @@
-;;; editor-config.el --- Genreal editor settings
+;;; editor-config.el --- General editor settings  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; 
-
+;; Editing defaults, completion UI, navigation, and persistent state.
 
 ;;; Code:
-;; copy paste whole line or region
-(use-package utility)
-(use-package search-tool)
+(require 'utility)
+(require 'search-tool)
+
+(defvar frei/config-directory
+  (file-name-as-directory
+   (expand-file-name
+    ".."
+    (file-name-directory (or load-file-name buffer-file-name))))
+  "Root directory of this Emacs configuration.")
+
+(defvar ispell-program-name)
+(declare-function server-running-p "server")
+
+(defconst frei/state-directory
+  (expand-file-name "var/" frei/config-directory)
+  "Directory for generated Emacs state.")
+
+(defconst frei/backup-directory
+  (expand-file-name "backups/" frei/state-directory)
+  "Directory for backup files.")
+
+(defconst frei/auto-save-directory
+  (expand-file-name "auto-save/" frei/state-directory)
+  "Directory for auto-save files.")
+
+(dolist (directory
+         (list frei/state-directory
+               frei/backup-directory
+               frei/auto-save-directory))
+  (make-directory directory t))
+
+(setq backup-by-copying t
+      backup-directory-alist
+      (list (cons "." frei/backup-directory))
+      auto-save-file-name-transforms
+      (list (list ".*" frei/auto-save-directory t))
+      auto-save-list-file-prefix
+      (expand-file-name ".saves-" frei/auto-save-directory)
+      delete-old-versions t
+      kept-new-versions 6
+      kept-old-versions 2
+      version-control t
+      create-lockfiles t
+      delete-by-moving-to-trash t
+      enable-recursive-minibuffers t
+      sentence-end-double-space nil
+      use-short-answers t
+      read-extended-command-predicate
+      #'command-completion-default-include-p)
+
+(setq-default fill-column 120
+              indent-tabs-mode nil
+              show-trailing-whitespace nil)
+
+(defun frei/prog-mode-visuals ()
+  "Enable unobtrusive visual helpers in programming buffers."
+  (setq-local show-trailing-whitespace t)
+  (display-line-numbers-mode 1)
+  (display-fill-column-indicator-mode 1))
+
+(add-hook 'prog-mode-hook #'frei/prog-mode-visuals)
+
+(electric-pair-mode 1)
+(show-paren-mode 1)
+(delete-selection-mode 1)
+
+(when (fboundp 'context-menu-mode)
+  (context-menu-mode 1))
+
+(global-set-key (kbd "<escape>") #'keyboard-escape-quit)
+
+(use-package recentf
+  :ensure nil
+  :hook (after-init . recentf-mode)
+  :custom
+  (recentf-save-file
+   (expand-file-name "recentf.eld" frei/state-directory))
+  (recentf-max-saved-items 500)
+  (recentf-auto-cleanup 300)
+  (recentf-exclude
+   '("/tmp/" "/ssh:" "/sudo:" "/var/folders/")))
+
+(use-package savehist
+  :ensure nil
+  :init
+  (savehist-mode 1)
+  :custom
+  (savehist-file
+   (expand-file-name "history.eld" frei/state-directory))
+  (history-length 500)
+  (savehist-autosave-interval 300))
+
+(use-package saveplace
+  :ensure nil
+  :init
+  (save-place-mode 1)
+  :custom
+  (save-place-file
+   (expand-file-name "places.eld" frei/state-directory)))
+
+(use-package which-key
+  :ensure nil
+  :demand t
+  :init
+  (which-key-mode 1)
+  :config
+  (which-key-setup-minibuffer))
+
+(use-package vertico
+  :ensure t
+  :init
+  (vertico-mode 1)
+  :custom
+  (vertico-cycle t))
+
+(use-package orderless
+  :ensure t
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-defaults nil)
+  (completion-category-overrides
+   '((file (styles partial-completion)))))
+
+(when (boundp 'completion-pcm-leading-wildcard)
+  (setq completion-pcm-leading-wildcard t))
+
+(use-package marginalia
+  :ensure t
+  :bind
+  (:map minibuffer-local-map
+        ("M-A" . marginalia-cycle))
+  :init
+  (marginalia-mode 1))
+
+(use-package consult
+  :ensure t
+  :bind
+  (("C-x b" . consult-buffer)
+   ("C-c r" . consult-ripgrep)
+   ("C-c l" . consult-line)
+   ("C-c t" . consult-goto-line)
+   ("M-g g" . consult-goto-line)
+   ("M-s l" . consult-line)
+   ("M-s r" . consult-ripgrep)
+   ("M-y" . consult-yank-pop))
+  :custom
+  (consult-preview-key '(:debounce 0.15 any)))
+
+(use-package corfu
+  :ensure t
+  :init
+  (global-corfu-mode 1)
+  :custom
+  (tab-always-indent 'complete)
+  (text-mode-ispell-word-completion nil)
+  (corfu-cycle t)
+  (corfu-preselect 'prompt))
+
+(use-package corfu-popupinfo
+  :ensure nil
+  :after corfu
+  :hook (corfu-mode . corfu-popupinfo-mode)
+  :custom
+  (corfu-popupinfo-delay '(0.5 . 0.2)))
+
+(use-package subword
+  :ensure nil
+  :hook (prog-mode . subword-mode))
+
 (use-package whole-line-or-region
   :ensure t
-  :init (whole-line-or-region-mode))
-
-
-;; recentf
-(use-package recentf
-  :init
-  (recentf-mode 1)
   :config
-  (setq recentf-max-saved-items 1000
-	recentf-exclude '("^/tmp/pg*"
-			  "^pg*"
-			  "/tmp/"
-			  "/ssh:")))
+  (whole-line-or-region-global-mode 1))
 
-
-(fset 'yes-or-no-p 'y-or-n-p)
-(global-linum-mode)
-(setq-default fill-column 80)
-;;; new line behavior
-(global-set-key (kbd "RET") 'newline-and-indent)
-
-
-;; backup
-(setq
-   backup-by-copying t      ; don't clobber symlinks
-   backup-directory-alist   '((".*" . "~/.saves"))    ; don't litter my fs tree
-   auto-save-file-name-transforms   '((".*" "~/.saves"))
-   delete-old-versions t
-   kept-new-versions 4
-   kept-old-versions 2
-   version-control t)       ; use versioned backups
-
-
-
-
-;;; hl
-(use-package highlight-symbol
-  :ensure t
-  :config
-  (diminish 'highlight-symbol-mode)
-  (dolist (hook '(prog-mode-hook html-mode-hook css-mode-hook))
-    (add-hook hook 'highlight-symbol-mode)
-    (add-hook hook 'highlight-symbol-nav-mode))
-  (add-hook 'org-mode-hook 'highlight-symbol-nav-mode))
-
-
-;;; undo tree
-(use-package undo-tree
-  :ensure t
-  :init
-  (global-undo-tree-mode)
-  (diminish 'undo-tree-mode))
-
-
-;; guide-key
-(use-package guide-key
-  :ensure t
-  :init
-  (guide-key-mode 1)
-  (diminish 'guide-key-mode)
-  (setq guide-key/guide-key-sequence '("C-x" "C-c" "C-x 4" "C-x 5" "C-c ;" "C-c ; f" "C-c ' f" "C-x n" "C-x C-r" "C-x r" "C-c r"))
-  (setq guide-key/recursive-key-sequence-flag t))
-
-(use-package guide-key-tip
-  :if window-system ;have some issue with X, x-show-tip have issue with HighDPI display....
-  :ensure t
-  :config
-  (setq guide-key-tip/enabled t))
-
-(use-package regex-tool :ensure t)
-(use-package scratch :ensure t)
-
-(use-package edit-server
-  :if window-system
-  :ensure t
-  :init
-  (add-hook 'after-init-hook 'server-start t)
-  (add-hook 'after-init-hook 'edit-server-start t))
-
-;; dired
-(use-package dired+
-  :ensure t
-  :init
-  (setq-default diredp-hide-details-initially-flag nil
-		dired-dwim-target t))
-
-(use-package diff-hl
-  :ensure t
-  :defer t
-  :config
-  (add-hook 'dired-mode-hook 'diff-hl-dired-mode))
-
-;; projectile
-;; http://projectile.readthedocs.io/en/latest/configuration/
-(use-package projectile
-  :ensure t
-  :config
-  (setq projectile-mode-line
-        '(:eval (format " Projectile[%s]"
-                        (projectile-project-name))))
-  
-  (projectile-global-mode)
-  (define-key projectile-mode-map (kbd "s-p") 'projectile-command-map)
-  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map))
-
-;; treemacs
-(use-package treemacs
-  :ensure t
-  :defer t
-  :config
-  (progn
-    (setq treemacs-collapse-dirs              (if (executable-find "python") 3 0)
-          treemacs-deferred-git-apply-delay   0.5
-          treemacs-display-in-side-window     t
-          treemacs-file-event-delay           5000
-          treemacs-file-follow-delay          0.2
-          treemacs-follow-after-init          t
-          treemacs-follow-recenter-distance   0.1
-          treemacs-goto-tag-strategy          'refetch-index
-          treemacs-indentation                2
-          treemacs-indentation-string         " "
-          treemacs-is-never-other-window      nil
-          treemacs-no-png-images              nil
-          treemacs-project-follow-cleanup     nil
-          treemacs-persist-file               (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
-          treemacs-recenter-after-file-follow nil
-          treemacs-recenter-after-tag-follow  nil
-          treemacs-show-hidden-files          t
-          treemacs-silent-filewatch           nil
-          treemacs-silent-refresh             nil
-          treemacs-sorting                    'alphabetic-desc
-          treemacs-space-between-root-nodes   t
-          treemacs-tag-follow-cleanup         t
-          treemacs-tag-follow-delay           1.5
-          treemacs-width                      35)
-
-    ;; The default width and height of the icons is 22 pixels. If you are
-    ;; using a Hi-DPI display, uncomment this to double the icon size.
-    ;;(treemacs-resize-icons 44)
-
-    (treemacs-follow-mode t)
-    (treemacs-filewatch-mode t)
-    (treemacs-fringe-indicator-mode t)
-    (pcase (cons (not (null (executable-find "git")))
-                 (not (null (executable-find "python3"))))
-      (`(t . t)
-       (treemacs-git-mode 'extended))
-      (`(t . _)
-       (treemacs-git-mode 'simple))))
-  :bind
-  (:map global-map
-        ([f8]        . treemacs)
-        ("M-0"       . treemacs-select-window)
-        ("C-c t 1"   . treemacs-delete-other-windows)
-	("C-x t t"   . treemacs)
-	("C-x t B"   . treemacs-bookmark)
-        ("C-x t C-t" . treemacs-find-file)
-        ("C-x t M-t" . treemacs-find-tag)))
-
-(use-package treemacs-projectile
-  :after treemacs projectile
-  :ensure t)
-
-;; yasnippet
 (use-package yasnippet
   :ensure t
   :config
   (yas-global-mode 1))
 
-;; fonts
-(use-package default-text-scale
-  :ensure t
-  :init
-  (when (member "Inconsolata" (font-family-list nil))
-    (set-face-attribute 'default nil :family "Inconsolata" :height 140))
-  
-  (bind-key "C-M-=" #'default-text-scale-increase)
-  (bind-key "C-M--" #'default-text-scale-decrease))
-
-
-;; spell checking
-(use-package flyspell
-  :config
-  (use-package ispell)
-  (when (executable-find ispell-program-name)
-    (add-to-list 'flyspell-prog-text-faces 'nxml-text-face)
-    (add-hook 'prog-mode-hook 'flyspell-prog-mode)))
-
-
-;; hipple expand
-(use-package hipple-expand
+(use-package dired
+  :ensure nil
   :bind
-  ("M-/" . hippie-expand)
+  (("C-x C-j" . dired-jump))
+  :custom
+  (dired-dwim-target t))
 
-  :init  
-  (setq hippie-expand-try-functions-list
-	'(try-complete-file-name-partially
-	  try-complete-file-name
-	  try-expand-dabbrev
-	  try-expand-dabbrev-all-buffers
-	  try-expand-dabbrev-from-kill)))
-
-;; company
-(use-package company
+(use-package dired-sidebar
   :ensure t
-  :init
-  (global-company-mode)
-  (diminish 'company-mode "CMP"))
+  :commands dired-sidebar-toggle-sidebar
+  :bind
+  ([f8] . dired-sidebar-toggle-sidebar))
 
-;; ido (helm next time
-(use-package ido
-  :init
-  (ido-mode t)
-  (ido-everywhere t)
-  (setq ido-use-virtual-buffers t)	;for history buffers
-  
-  (flx-ido-mode 1)			;override ido's flex matching
-  ;; disable ido faces to see flx highlights.
-  (setq ido-enable-flex-matching t)
-  (setq ido-use-faces nil)
-  
-  ;; disable search file in other dir if it not exists
-  (setq ido-auto-merge-work-directories-length -1)
-  :config
-  (use-package flx-ido :ensure t)
-  (use-package recentf)
-  (add-hook 'ido-setup-hook (lambda () (define-key ido-completion-map [up] 'previous-history-element)))
-  
-  (use-package ido-completing-read+
-    :ensure t
-    :init (ido-ubiquitous-mode t))
-
-  (use-package idomenu
-    :ensure t))
-
-
-;; Use smex to handle M-x
-(use-package smex
+(use-package diff-hl
   :ensure t
-  :init
-  ;; Change path for ~/.smex-items
-  (setq smex-save-file (expand-file-name ".smex-items" user-emacs-directory))
-  (global-set-key [remap execute-extended-command] 'smex))
+  :hook
+  ((prog-mode . diff-hl-mode)
+   (dired-mode . diff-hl-dired-mode)))
 
-;; revert buffer after image changed 
+(use-package markdown-mode
+  :ensure t
+  :mode
+  (("\\.md\\'" . markdown-mode)
+   ("\\.markdown\\'" . markdown-mode)))
+
+(use-package copilot
+  :ensure t
+  :commands copilot-mode
+  :bind
+  (:map copilot-completion-map
+        ("C-c <tab>" . copilot-accept-completion)
+        ("M-n" . copilot-next-completion)
+        ("M-p" . copilot-previous-completion))
+  :custom
+  (copilot-indent-offset-warning-disable t))
+
 (use-package image-mode
-  :init
-  (add-hook 'image-mode-hook 'auto-revert-mode))
+  :ensure nil
+  :hook (image-mode . auto-revert-mode))
+
+(let ((spell-checker
+       (or (executable-find "hunspell")
+           (executable-find "aspell"))))
+  (when spell-checker
+    (require 'ispell)
+    (setq ispell-program-name spell-checker)
+    (add-hook 'prog-mode-hook #'flyspell-prog-mode)))
+
+(use-package server
+  :ensure nil
+  :if (not noninteractive)
+  :config
+  (unless (server-running-p)
+    (server-start)))
 
 (provide 'editor-config)
 

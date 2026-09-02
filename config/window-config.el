@@ -1,66 +1,49 @@
-;; -*- lexical-binding: t -*-
-;;; window-config.el --- window management
-;;; Commentary:
-;; 
+;;; window-config.el --- Window management  -*- lexical-binding: t; -*-
 
+;;; Commentary:
+;; Window history, selection, and predictable split behavior.
 
 ;;; Code:
-;;----------------------------------------------------------------------------
-;; Navigate window layouts with "C-c <left>" and "C-c <right>"
-;;----------------------------------------------------------------------------
 (winner-mode 1)
 
+(defun frei/make-split-command (split-function)
+  "Return a command that splits with SPLIT-FUNCTION and selects the new window."
+  (lambda (&optional stay)
+    (interactive "P")
+    (let ((new-window (funcall split-function)))
+      (set-window-buffer new-window (other-buffer))
+      (unless stay
+        (select-window new-window)))))
 
-(setq lexical-binding t)
-;; Make "C-x o" prompt for a target window when there are more than 2
+(defun frei/split-right-instead ()
+  "Replace the current layout with a left-right split."
+  (interactive)
+  (delete-other-windows)
+  (funcall (frei/make-split-command #'split-window-right)))
+
+(defun frei/split-below-instead ()
+  "Replace the current layout with a top-bottom split."
+  (interactive)
+  (delete-other-windows)
+  (funcall (frei/make-split-command #'split-window-below)))
+
+(global-set-key
+ (kbd "C-x 2")
+ (frei/make-split-command #'split-window-below))
+
+(global-set-key
+ (kbd "C-x 3")
+ (frei/make-split-command #'split-window-right))
+
 (use-package switch-window
   :ensure t
-  :init
-  (setq inhibit-startup-screen t)
-  (setq inhibit-startup-echo-area-message t)
-  
-  (setq-default switch-window-shortcut-style 'alphabet)
-  (setq-default switch-window-timeout nil)
-  (setq lexical-binding t)
-  ;;----------------------------------------------------------------------------
-  ;; When splitting window, show (other-buffer) in the new window
-  ;;----------------------------------------------------------------------------
-  ;; since I rarely use lower version of emacs, lexcial binding is the best option
-
-  (defun split-window-func-with-other-buffer (split-function)
-    (let ((lexical-binding t)
-	  (s-f split-function))
-      (lambda (&optional arg)
-	"Split this window and switch to the new window unless ARG is provided."
-	(interactive "P")
-	(funcall s-f)
-	(let ((target-window (next-window)))
-	  (set-window-buffer target-window (other-buffer))
-	  (unless arg
-	    (select-window target-window))))))
-
-  ;;----------------------------------------------------------------------------
-  ;; Rearrange split windows
-  ;;----------------------------------------------------------------------------
-  (defun split-window-horizontally-instead ()
-    (interactive)
-    (save-excursion
-      (delete-other-windows)
-      (funcall (split-window-func-with-other-buffer 'split-window-horizontally))))
-
-  (defun split-window-vertically-instead ()
-    (interactive)
-    (save-excursion
-      (delete-other-windows)
-      (funcall (split-window-func-with-other-buffer 'split-window-vertically))))
-  
-  (bind-key "C-x 2"  (split-window-func-with-other-buffer 'split-window-vertically))
-  (bind-key "C-x 3"  (split-window-func-with-other-buffer 'split-window-horizontally))
-  
-  :bind (("C-x o" . switch-window)
-	 ("C-x |" . split-window-horizontally-instead)
-	 ("C-x _" . split-window-vertically-instead)))
-
+  :bind
+  (("C-x o" . switch-window)
+   ("C-x |" . frei/split-right-instead)
+   ("C-x _" . frei/split-below-instead))
+  :custom
+  (switch-window-shortcut-style 'alphabet)
+  (switch-window-timeout nil))
 
 (provide 'window-config)
 

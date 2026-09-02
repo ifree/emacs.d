@@ -1,16 +1,10 @@
-;;; env-config.el --- default config
+;;; env-config.el --- Default environment  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; 
+;; Load only the shared editor configuration.
 
 ;;; Code:
-
-(use-package theme-config :demand)
-(use-package window-config :demand)
-(use-package editor-config :demand)
-
-
-
+(require 'base-config)
 
 (provide 'env-config)
 

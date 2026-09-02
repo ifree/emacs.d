@@ -1,22 +1,12 @@
-;;; env-config.el --- home config
+;;; env-config.el --- Work environment  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; 
-
+;; Shared configuration plus C and C++ development support.
 
 ;;; Code:
-(load (expand-file-name "env/default/env-config.el" user-emacs-directory) nil t)
-
-(use-package coding-config :demand)
-(use-package cpp-config :demand)
-(use-package rust-config :demand)
-
-;;; cargo
-(when (memq window-system '(w32))
-  (setq cargo-process--custom-path-to-bin (format "%s/mingw64/bin" (getenv "msys_home"))))
-
-(setq racer-rust-src-path (expand-file-name "~/Source/rust/src")) ;; Rust source code PATH
-
+(require 'base-config)
+(require 'coding-config)
+(require 'cpp-config)
 
 (provide 'env-config)
 

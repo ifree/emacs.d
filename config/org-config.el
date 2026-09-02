@@ -1,27 +1,17 @@
-;;; org-config.el --- org settings
+;;; org-config.el --- Org settings  -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; 
-
+;; A small setup built on the Org version bundled with Emacs.
 
 ;;; Code:
-(setq org-src-fontify-natively t)	; syntax highlighting
-(setq org-startup-with-inline-images t);; auto show images
-
-(use-package tex
-  :if (executable-find "/usr/bin/tex")
-  :defer t
-  :ensure auctex
-  :config
-  (use-package cdlatex :ensure t)
-  (use-package org
-    :ensure t
-    :init
-    (add-hook 'org-mode-hook 'turn-on-org-cdlatex)))
-
-(use-package org-onenote
-  :defer t
-  :ensure t)
+(use-package org
+  :ensure nil
+  :hook (org-mode . visual-line-mode)
+  :custom
+  (org-src-fontify-natively t)
+  (org-startup-with-inline-images t)
+  (org-src-tab-acts-natively t)
+  (org-edit-src-content-indentation 0))
 
 (provide 'org-config)
 

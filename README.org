@@ -1,7 +1,40 @@
-* My emacs configuration
+#+title: Emacs configuration
 
-  This is my emacs configuration which aims at modular and works for different environment. 
+* Overview
 
-** Environment definition
+This configuration targets Emacs 30 or newer and is currently tested with
+Emacs 31.1 on Windows.
 
-   Just set environment variable =EMACS_ENV_NAME= to load target Envs (see my example)
+The configuration is split into shared modules under =config/= and small
+environment selectors under =env/=.
+
+* Environments
+
+Set the =EMACS_ENV_NAME= environment variable before starting Emacs:
+
+- =default=: editor, UI, and completion
+- =home=: default plus C/C++ and Org
+- =work=: default plus C/C++
+
+If the variable is absent, =default= is used.
+
+* Main packages
+
+The minibuffer stack is Vertico, Orderless, Marginalia, and Consult.
+In-buffer completion is provided by Corfu.  C and C++ language features use
+the built-in Eglot client when =clangd= is available.
+
+Packages are installed through GNU ELPA, NonGNU ELPA, and MELPA on first use.
+
+* External tools
+
+Useful optional executables:
+
+- =clangd= for C/C++ language features
+- =cmake= for CMake projects
+- =rg= for =consult-ripgrep=
+- =aspell= or =hunspell= for spell checking
+- =node= for Copilot
+
+Runtime state, backups, auto-save files, and native compilation output are
+kept out of Git.
