@@ -288,7 +288,7 @@ The grammar is not necessarily installed; see
 (defun frei/code-insight--collect (root beg end)
   "Collect imports and definitions of ROOT overlapping BEG to END.
 Return (IMPORTS . DEFINITIONS).  Each definition is a vector of level,
-name, first line, start line, end line and called names."
+name, first line, start line, end line, called names and node type."
   (let ((imports nil)
         (definitions nil)
         (stack nil))
@@ -309,7 +309,8 @@ name, first line, start line, end line and called names."
                                        node))
                                     (line-number-at-pos (treesit-node-start node) t)
                                     (line-number-at-pos (treesit-node-end node) t)
-                                    nil)))
+                                    nil
+                                    type)))
                  (when (and (< (treesit-node-start node) end)
                             (> (treesit-node-end node) beg))
                    (push entry definitions))
@@ -328,6 +329,14 @@ name, first line, start line, end line and called names."
                  (walk child level)))))))
       (walk root 0))
     (cons (nreverse imports) (nreverse definitions))))
+
+(defun frei/code-insight--parse (language beg end)
+  "Collect the imports and definitions between BEG and END in LANGUAGE.
+Return what `frei/code-insight--collect' returns."
+  (let ((parser (treesit-parser-create language nil t)))
+    (unwind-protect
+        (frei/code-insight--collect (treesit-parser-root-node parser) beg end)
+      (treesit-parser-delete parser))))
 
 (defun frei/code-insight--analyze (language beg end)
   "Analyze the code between BEG and END in LANGUAGE with tree-sitter.
@@ -367,6 +376,129 @@ definition names and their start lines."
                  (push (cons (aref entry 1) (aref entry 3)) names)))
              (nreverse names))))
       (treesit-parser-delete parser))))
+
+;;;; Diagrams straight from tree-sitter
+
+(defcustom frei/code-insight-treesit-max-nodes 80
+  "Largest number of definitions drawn by `frei/code-insight-treesit-diagram'."
+  :type 'integer)
+
+(defconst frei/code-insight--treesit-task "架构图（tree-sitter）"
+  "Name of the task that draws the call graph without the agent.")
+
+(defconst frei/code-insight--function-type-regexp
+  (rx (or "function" "method" "constructor"))
+  "Regexp matching node types of functions and methods.")
+
+(defconst frei/code-insight--entry-names
+  '("main" "Main" "__main__" "WinMain" "wmain")
+  "Names highlighted as entry points in generated call graphs.")
+
+(defun frei/code-insight--dot-string (text)
+  "Return TEXT quoted for a DOT attribute."
+  (concat "\"" (replace-regexp-in-string "[\"\\]" "\\\\\\&" text) "\""))
+
+(defun frei/code-insight--callee-name (callee)
+  "Return the plain name a CALLEE expression refers to.
+Argument lists are dropped, so Builder(env).run names run, and only
+the last part of a qualified name is kept."
+  (let ((text callee))
+    (while (string-match-p "([^()]*)" text)
+      (setq text (replace-regexp-in-string "([^()]*)" "" text)))
+    (car (last (split-string text "[.:>]" t)))))
+
+(defun frei/code-insight--call-graph (definitions)
+  "Build the call graph of the DEFINITIONS vectors.
+Return a list of the DOT source, the number of nodes drawn and the
+number of edges."
+  (let* ((entries (vconcat (seq-take definitions frei/code-insight-treesit-max-nodes)))
+         (count (length entries))
+         (parents (make-vector count nil))
+         (children (make-vector count nil))
+         (stack nil)
+         (by-name nil)
+         (edges nil))
+    ;; Nesting from the levels, and an index of names.
+    (dotimes (i count)
+      (let ((level (aref (aref entries i) 0)))
+        (while (and stack (>= (aref (aref entries (car stack)) 0) level))
+          (pop stack))
+        (when stack
+          (aset parents i (car stack))
+          (aset children (car stack) (append (aref children (car stack)) (list i))))
+        (push i stack))
+      (when-let* ((name (aref (aref entries i) 1)))
+        (push (cons name i) by-name)))
+    (setq by-name (nreverse by-name))
+    ;; Edges: a call resolves to a definition of the same container first.
+    (dotimes (i count)
+      (dolist (callee (aref (aref entries i) 5))
+        (let* ((name (frei/code-insight--callee-name callee))
+               (candidates (mapcar #'cdr (seq-filter (lambda (pair) (equal (car pair) name))
+                                                     by-name)))
+               (target (or (seq-find (lambda (j) (eq (aref parents j) (aref parents i)))
+                                     candidates)
+                           (car candidates))))
+          (when (and target (not (member (cons i target) edges)))
+            (push (cons i target) edges)))))
+    (setq edges (nreverse edges))
+    ;; A call into a class next to a call of one of its methods adds
+    ;; nothing; keep the edge to the method.
+    (setq edges (seq-remove
+                 (lambda (edge)
+                   (and (aref children (cdr edge))
+                        (seq-some (lambda (other)
+                                    (and (eq (car other) (car edge))
+                                         (eq (aref parents (cdr other)) (cdr edge))))
+                                  edges)))
+                 edges))
+    (cl-labels
+        ((function-p (i)
+           (string-match-p frei/code-insight--function-type-regexp
+                           (aref (aref entries i) 6)))
+         (label (i)
+           (let ((name (or (aref (aref entries i) 1) "?")))
+             (if (function-p i) (concat name "()") name)))
+         (node (i)
+           (format "  n%d [label=%s, fillcolor=%s, fontcolor=%s];\n"
+                   i (frei/code-insight--dot-string (label i))
+                   (cond ((member (aref (aref entries i) 1) frei/code-insight--entry-names)
+                          "\"#2ECC71\"")
+                         ((function-p i) "\"#3498DB\"")
+                         (t "\"#F1C40F\""))
+                   (if (or (function-p i)
+                           (member (aref (aref entries i) 1) frei/code-insight--entry-names))
+                       "white" "black")))
+         (emit (i)
+           (if (aref children i)
+               (concat (format "  subgraph cluster_%d {\n    label=%s; style=\"rounded,filled\"; fillcolor=\"#f5f5f5\"; color=\"#999999\"; fontcolor=black;\n"
+                               i (frei/code-insight--dot-string (label i)))
+                       (mapconcat #'emit (aref children i) "")
+                       "  }\n")
+             (node i)))
+         (anchor (i)
+           ;; Edges cannot end on a cluster; aim at its first leaf instead.
+           (if (aref children i) (anchor (car (aref children i))) i)))
+      (list
+       (concat "digraph G {\n"
+               "  graph [rankdir=LR, nodesep=0.4, ranksep=0.7, splines=ortho, compound=true, fontname=\"sans-serif\"];\n"
+               "  node [shape=box, style=\"rounded,filled\", fontname=\"sans-serif\", fontsize=12];\n"
+               "  edge [arrowhead=vee, color=\"#666666\"];\n"
+               (mapconcat #'emit
+                          (seq-filter (lambda (i) (null (aref parents i)))
+                                      (number-sequence 0 (1- count)))
+                          "")
+               (mapconcat (lambda (edge)
+                            (let ((from (anchor (car edge)))
+                                  (to (anchor (cdr edge))))
+                              (format "  n%d -> n%d%s;\n" from to
+                                      (if (aref children (cdr edge))
+                                          (format " [lhead=cluster_%d]" (cdr edge))
+                                        ""))))
+                          edges "")
+               "}\n")
+       count
+       (length edges)))))
 
 ;;;; Prompt template
 
@@ -721,16 +853,29 @@ A qualified NAME such as Class.method is looked up by its last part."
 
 ;;;; Running the agent
 
+(defun frei/code-insight--treesit-available-p ()
+  "Return non-nil when the current buffer can be drawn without the agent."
+  (and (not frei/code-insight-mode)
+       (frei/code-insight--grammar-available-p (frei/code-insight--language))))
+
 (defun frei/code-insight--read-task ()
-  "Ask for an analysis task; return (NAME . PROMPT)."
+  "Ask for an analysis task; return (NAME . PROMPT).
+The PROMPT is the symbol `treesit' for the diagram drawn without the
+agent, which is offered only when the buffer has a grammar."
   (let ((choice (completing-read "分析任务: "
-                                 (append (mapcar #'car frei/code-insight-tasks)
+                                 (append (and (frei/code-insight--treesit-available-p)
+                                              (list frei/code-insight--treesit-task))
+                                         (mapcar #'car frei/code-insight-tasks)
                                          '("自定义…"))
                                  nil t)))
-    (if (equal choice "自定义…")
-        (let ((question (read-string "问题: " nil 'frei/code-insight-question-history)))
-          (cons question question))
-      (assoc choice frei/code-insight-tasks))))
+    (cond
+     ((equal choice "自定义…")
+      (let ((question (read-string "问题: " nil 'frei/code-insight-question-history)))
+        (cons question question)))
+     ((equal choice frei/code-insight--treesit-task)
+      (cons choice 'treesit))
+     (t
+      (assoc choice frei/code-insight-tasks)))))
 
 (defun frei/code-insight--task-arguments (name)
   "Return the extra agent arguments for the task called NAME."
@@ -911,6 +1056,12 @@ question of your own.  The answer streams into the transcript buffer
 next to the code; inside a transcript the transcript itself is the
 material, so questions about earlier answers can be asked there."
   (interactive (list (frei/code-insight--read-task)))
+  (if (eq (cdr task) 'treesit)
+      (frei/code-insight-treesit-diagram)
+    (frei/code-insight--ask task)))
+
+(defun frei/code-insight--ask (task)
+  "Send the region or the buffer to the agent for TASK, a (NAME . PROMPT) pair."
   (let* ((region (use-region-p))
          (beg (if region (region-beginning) (point-min)))
          (end (if region (region-end) (point-max)))
@@ -943,6 +1094,85 @@ material, so questions about earlier answers can be asked there."
           (set-marker (process-get process 'section)
                       (with-current-buffer buffer (point-max))))
         process))))
+
+;;;###autoload
+(defun frei/code-insight-treesit-diagram ()
+  "Draw the call graph of the region or the buffer from tree-sitter alone.
+Definitions become nodes, classes and namespaces become clusters, and
+calls between them become edges; no agent is involved.  The drawing
+goes into the transcript like an answer."
+  (interactive)
+  (unless (frei/code-insight--treesit-available-p)
+    (user-error "当前 buffer 没有可用的 tree-sitter 语法库"))
+  (let* ((region (use-region-p))
+         (beg (if region (region-beginning) (point-min)))
+         (end (if region (region-end) (point-max)))
+         (started (current-time))
+         (source (current-buffer))
+         (language (frei/code-insight--language))
+         (definitions (cdr (frei/code-insight--parse language beg end)))
+         (names (let ((alist nil))
+                  (dolist (definition definitions)
+                    (let ((name (aref definition 1)))
+                      (when (and name (not (assoc name alist)))
+                        (push (cons name (aref definition 3)) alist))))
+                  (nreverse alist)))
+         (buffer (frei/code-insight--transcript source))
+         (key (frei/code-insight--source-key source))
+         (entry (frei/code-insight--register-source buffer key names))
+         (task frei/code-insight--treesit-task)
+         (heading (format "%s · %s%s · %s  _tree-sitter (%s)_"
+                          (file-name-nondirectory key) task
+                          (if region
+                              (format "（第 %d 到 %d 行）"
+                                      (line-number-at-pos beg t)
+                                      (line-number-at-pos end t))
+                            "")
+                          (format-time-string "%m-%d %H:%M")
+                          language)))
+    (with-current-buffer buffer
+      (when (process-live-p frei/code-insight--process)
+        (user-error "上一个请求还在进行，先按 k 取消")))
+    (deactivate-mark)
+    (pcase-let ((`(,dot ,nodes ,edges) (frei/code-insight--call-graph definitions)))
+      (frei/code-insight--insert buffer "\n")
+      (let ((heading-start (with-current-buffer buffer (copy-marker (point-max)))))
+        (frei/code-insight--insert
+         buffer
+         (concat (frei/code-insight--heading-line heading key task)
+                 (format "\n<!-- code-insight source=\"%s\" task=\"%s\" -->\n\n" key task)))
+        (when (and (not (plist-get (cdr entry) :outline)) (not (seq-empty-p definitions)))
+          (plist-put (cdr entry) :outline t)
+          (frei/code-insight--insert-outline
+           buffer (car (frei/code-insight--analyze language beg end))))
+        (let ((section (with-current-buffer buffer (copy-marker (point-max)))))
+          (frei/code-insight--insert
+           buffer
+           (concat
+            (format "%d 个定义，%d 条调用关系%s。\n\n"
+                    nodes edges
+                    (if (> (length definitions) nodes)
+                        (format "，只画了前 %d 个" nodes)
+                      ""))
+            "```dot\n" dot "```\n\n"
+            (when names
+              (concat "节点："
+                      (mapconcat (lambda (pair) (format "`%s`" (car pair))) names " ")
+                      "\n"))
+            (format "\n---\n_完成 · tree-sitter · %d 节点 · %d 边 · %.2f 秒_\n"
+                    nodes edges (float-time (time-since started)))))
+          (with-current-buffer buffer
+            (frei/code-insight--linkify section (point-max) entry)
+            (unless (frei/diagram-format-available-p 'dot)
+              (frei/code-insight--insert
+               buffer "_没有 documd，图只能以 DOT 源码显示。_\n"))
+            (frei/diagram-render-region section (point-max))
+            (frei/code-insight--append-history
+             (concat "\n" (buffer-substring-no-properties heading-start (point-max))))
+            (frei/code-insight--set-header
+             buffer (format "完成 · tree-sitter · %d 节点 · %d 边 · %s"
+                            nodes edges frei/code-insight--legend))))))
+    (display-buffer buffer frei/code-insight-display-action)))
 
 ;;;; Transcript commands
 

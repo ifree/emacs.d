@@ -29,7 +29,10 @@ Packages are installed through GNU ELPA, NonGNU ELPA, and MELPA on first use.
 
 =C-c a= sends the region or the buffer to the =pi= agent together with a
 structural outline extracted by tree-sitter, and streams the answer into
-the =*code-insight*= transcript shown to the right of the code.  Entries
+the =*code-insight*= transcript shown to the right of the code.  When the
+buffer has a grammar, the menu also offers a call graph drawn from
+tree-sitter alone, without any agent (=M-x frei/code-insight-treesit-diagram=).
+Entries
 about any number of files accumulate there, each with its source;
 =C-c a= inside the transcript sends the transcript itself, so questions
 about earlier answers can be asked in place.  Names of definitions in

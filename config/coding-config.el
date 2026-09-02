@@ -33,7 +33,8 @@
 ;; Explain the region or buffer with tree-sitter and the pi agent.
 (use-package code-insight
   :ensure nil
-  :commands (frei/code-insight-history frei/code-insight-open-in-browser)
+  :commands (frei/code-insight-history frei/code-insight-open-in-browser
+             frei/code-insight-treesit-diagram)
   :bind
   (("C-c a" . frei/code-insight)))
 
