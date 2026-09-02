@@ -4,6 +4,8 @@
 ;; Keep the existing Doom Molokai look with a lightweight built-in mode line.
 
 ;;; Code:
+(require 'seq)
+
 (use-package doom-themes
   :ensure t
   :demand t
@@ -23,18 +25,24 @@
            "%b")))
       display-time-24hr-format t)
 
-(add-to-list 'default-frame-alist '(internal-border-width . 0))
 (add-to-list 'default-frame-alist '(width . 160))
 (add-to-list 'default-frame-alist '(height . 60))
 
+(defconst frei/font-candidates
+  '("Inconsolata" "Cascadia Code" "Menlo" "DejaVu Sans Mono" "Consolas")
+  "Monospace font families to try for the default face, in order.")
+
 (defun frei/apply-default-font (&optional frame)
-  "Use Inconsolata in graphical FRAME when the font is installed."
+  "Use the first installed font of `frei/font-candidates' in graphical FRAME."
   (let ((target-frame (or frame (selected-frame))))
     (when (display-graphic-p target-frame)
       (with-selected-frame target-frame
-        (when (member "Inconsolata" (font-family-list))
-          (set-face-attribute
-           'default target-frame :family "Inconsolata" :height 160))))))
+        (let* ((installed (font-family-list target-frame))
+               (font (seq-find (lambda (family) (member family installed))
+                               frei/font-candidates)))
+          (when font
+            (set-face-attribute
+             'default target-frame :family font :height 160)))))))
 
 (frei/apply-default-font)
 (add-hook 'after-make-frame-functions #'frei/apply-default-font)

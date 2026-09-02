@@ -7,13 +7,7 @@
 (require 'utility)
 (require 'search-tool)
 
-(defvar frei/config-directory
-  (file-name-as-directory
-   (expand-file-name
-    ".."
-    (file-name-directory (or load-file-name buffer-file-name))))
-  "Root directory of this Emacs configuration.")
-
+(defvar frei/config-directory)
 (defvar ispell-program-name)
 (declare-function server-running-p "server")
 
@@ -46,7 +40,6 @@
       kept-new-versions 6
       kept-old-versions 2
       version-control t
-      create-lockfiles t
       delete-by-moving-to-trash t
       enable-recursive-minibuffers t
       sentence-end-double-space nil
@@ -55,8 +48,7 @@
       #'command-completion-default-include-p)
 
 (setq-default fill-column 120
-              indent-tabs-mode nil
-              show-trailing-whitespace nil)
+              indent-tabs-mode nil)
 
 (defun frei/prog-mode-visuals ()
   "Enable unobtrusive visual helpers in programming buffers."
@@ -67,7 +59,6 @@
 (add-hook 'prog-mode-hook #'frei/prog-mode-visuals)
 
 (electric-pair-mode 1)
-(show-paren-mode 1)
 (delete-selection-mode 1)
 
 (when (fboundp 'context-menu-mode)
@@ -93,8 +84,7 @@
   :custom
   (savehist-file
    (expand-file-name "history.eld" frei/state-directory))
-  (history-length 500)
-  (savehist-autosave-interval 300))
+  (history-length 500))
 
 (use-package saveplace
   :ensure nil
@@ -196,6 +186,32 @@
   :bind
   ([f8] . dired-sidebar-toggle-sidebar))
 
+(use-package project
+  :ensure nil
+  :bind
+  (([f7] . project-compile))
+  :custom
+  (project-list-file
+   (expand-file-name "projects.eld" frei/state-directory)))
+
+(defun frei/project-eshell ()
+  "Open an Eshell rooted at the current project."
+  (interactive)
+  (let ((display-buffer-alist
+         (cons
+          '("\\*.*eshell.*\\*"
+            (display-buffer-reuse-window display-buffer-at-bottom)
+            (window-height . 0.25))
+          display-buffer-alist)))
+    (if (project-current nil)
+        (project-eshell)
+      (eshell))))
+
+(use-package eshell
+  :ensure nil
+  :bind
+  (([f9] . frei/project-eshell)))
+
 (use-package diff-hl
   :ensure t
   :hook
@@ -207,17 +223,6 @@
   :mode
   (("\\.md\\'" . markdown-mode)
    ("\\.markdown\\'" . markdown-mode)))
-
-(use-package copilot
-  :ensure t
-  :commands copilot-mode
-  :bind
-  (:map copilot-completion-map
-        ("C-c <tab>" . copilot-accept-completion)
-        ("M-n" . copilot-next-completion)
-        ("M-p" . copilot-previous-completion))
-  :custom
-  (copilot-indent-offset-warning-disable t))
 
 (use-package image-mode
   :ensure nil

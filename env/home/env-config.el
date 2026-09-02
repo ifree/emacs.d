@@ -6,7 +6,6 @@
 ;;; Code:
 (require 'base-config)
 (require 'coding-config)
-(require 'cpp-config)
 (require 'org-config)
 
 (provide 'env-config)

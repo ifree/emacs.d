@@ -2,9 +2,6 @@
 *.eln
 *.eld
 *~
-.session
-.emacs.desktop*
-.smex*
 elpa/
 auto-save-list/
 eln-cache/
@@ -12,12 +9,5 @@ eshell/
 server/
 transient/
 var/
-recentf
-ido.last
 custom.el
-session.*
-
-/history
-/irony/
-/semanticdb/
 /tramp

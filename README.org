@@ -13,16 +13,15 @@ environment selectors under =env/=.
 Set the =EMACS_ENV_NAME= environment variable before starting Emacs:
 
 - =default=: editor, UI, and completion
-- =home=: default plus C/C++ and Org
-- =work=: default plus C/C++
+- =home=: default plus programming tools and Org
+- =work=: default plus programming tools
 
 If the variable is absent, =default= is used.
 
 * Main packages
 
 The minibuffer stack is Vertico, Orderless, Marginalia, and Consult.
-In-buffer completion is provided by Corfu.  C and C++ language features use
-the built-in Eglot client when =clangd= is available.
+In-buffer completion is provided by Corfu.
 
 Packages are installed through GNU ELPA, NonGNU ELPA, and MELPA on first use.
 
@@ -30,11 +29,8 @@ Packages are installed through GNU ELPA, NonGNU ELPA, and MELPA on first use.
 
 Useful optional executables:
 
-- =clangd= for C/C++ language features
-- =cmake= for CMake projects
 - =rg= for =consult-ripgrep=
 - =aspell= or =hunspell= for spell checking
-- =node= for Copilot
 
 Runtime state, backups, auto-save files, and native compilation output are
 kept out of Git.
