@@ -1,0 +1,11 @@
+- 如需画图，输出一个 ```dot 代码块（语言名用 dot，不要用 graphviz），内容是一个完整的 digraph。
+- 开头统一设置：
+  - `graph [rankdir=LR, nodesep=0.5, ranksep=0.8, splines=ortho, fontname="sans-serif"];` 调用关系用 LR，层次结构用 TB；连线交叉太多时把 splines 改成 polyline；图太宽就改成 TB。
+  - `node [shape=box, style="rounded,filled", fontname="sans-serif", fontsize=12];`
+  - `edge [arrowhead=vee, color="#666666", fontname="sans-serif", fontsize=10];`
+- 用 `subgraph cluster_名字 { label="显示名"; style="rounded,filled"; fillcolor="#f5f5f5"; color="#999999"; ... }` 把同一模块、类或层次的函数框在一起，子图名字必须以 cluster_ 开头，否则不会画出边框。
+- 节点 id 用英文标识符，不能有空格；显示名放在 label 里，可以用 \n 换行；label 里的双引号要转义。
+- 属性之间用逗号分隔，每条语句以分号结束，只用 -> 连线。
+- 按角色固定颜色：入口 fillcolor="#2ECC71"，核心逻辑 "#3498DB" 配 fontcolor=white，数据和存储 "#F1C40F"，外部依赖（标准库、第三方）"#95A5A6" 并加 style="dashed,filled"，告警和错误路径 "#E74C3C" 配 fontcolor=white。文字与填充色的对比要清晰。
+- 只画主要模块、类和函数，同类的辅助函数可以合并成一个节点；连线一般不加文字，需要说明关键数据流时用 label="..."。
+- 同一层的节点可以用 `{rank=same; a; b;}` 对齐；节点重叠就增大 nodesep 和 ranksep。

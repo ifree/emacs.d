@@ -1,0 +1,5 @@
+- 如需画图，输出一个 ```plantuml 代码块，以 @startuml 开始、@enduml 结束。
+- 表现模块和调用关系用组件图：`package "模块名" { component [名字] }` 分组，`[A] ..> [B] : 说明` 表示依赖或调用；表现类的结构用类图：`class 名字 { +方法() }`，继承 `<|--`，实现 `..|>`，组合 `*--`，聚合 `o--`，依赖 `..>`。
+- 开头用 skinparam 统一样式：`skinparam component { BackgroundColor #dae8fc; BorderColor #6c8ebf; FontName Arial; FontSize 12 }`，包用 BackgroundColor #FAFAFA 和 BorderColor #cccccc；类图用 `skinparam class { BackgroundColor #dae8fc; BorderColor #6c8ebf; ArrowColor #333333 }`。
+- 按角色给元素上色：核心 #dae8fc，服务 #d5e8d4，数据 #fff2cc，外部 #e1d5e7，接口 #f5f5f5，派生类 #ffe6cc；写法是在名字后面加 `#颜色`。
+- 只画主要模块、类和函数，同类的辅助函数可以合并；需要说明时用 `note right of 名字 ... end note`；不要用 mxgraph 图标。

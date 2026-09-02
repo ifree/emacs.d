@@ -10,3 +10,5 @@ server/
 var/
 custom.el
 /tramp
+tree-sitter/
+.#*

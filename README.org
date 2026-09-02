@@ -25,11 +25,41 @@ In-buffer completion is provided by Corfu.
 
 Packages are installed through GNU ELPA, NonGNU ELPA, and MELPA on first use.
 
+* Code analysis
+
+=C-c a= sends the region or the buffer to the =pi= agent together with a
+structural outline extracted by tree-sitter, and streams the answer into
+the =*code-insight*= transcript shown to the right of the code.  Entries
+about any number of files accumulate there, each with its source;
+=C-c a= inside the transcript sends the transcript itself, so questions
+about earlier answers can be asked in place.  Names of definitions in
+the answers link to the source.  Finished entries are also appended to
+=var/code-insight/history.md=, which =M-x frei/code-insight-history=
+brings back.  The transcript keys are =j= jump to an entry, =n= and =p=
+between entries, =t= render or hide the diagrams of the entry, =s= save,
+=c= copy, =o= source, =b= browser, =h= history, =k= cancel, =x= clear,
+=q= quit.  The prompt is built from =templates/code-insight.md=, and the
+drawing instructions for each diagram language from
+=templates/diagram-*.md=; both can be edited freely.
+
+Architecture diagrams come back as Graphviz blocks by default (see
+=frei/code-insight-diagram-format= for Mermaid or PlantUML) and are
+rendered inline by =documd=, the command line tool of docu.md;
+=M-x frei/diagram-toggle-images= switches between the image and the
+source, and =M-x frei/code-insight-open-in-browser= opens the answer in
+the browser.  Without =documd= the agent is asked for plain SVG instead.
+An ASCII art variant exists for documents and comments.
+
+Run =M-x frei/treesit-install-grammars= once to install the grammars;
+without them only the plain code is sent.
+
 * External tools
 
 Useful optional executables:
 
 - =rg= for =consult-ripgrep=
+- =pi= for code analysis
+- =documd= (=npm install -g @markdown-viewer/documd=, needs Chrome) for diagrams
 - =aspell= or =hunspell= for spell checking
 
 Runtime state, backups, auto-save files, and native compilation output are

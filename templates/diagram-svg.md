@@ -1,0 +1,3 @@
+- 如需画图，输出一个 ```svg 代码块，里面是完整的 SVG 文档：根元素带 xmlns、width、height 和 viewBox，宽度 900 左右，高度按内容决定。
+- 只用 rect、circle、ellipse、line、path、polyline、polygon、text、g、defs、marker 这些基本元素，不要用 foreignObject、外部字体、图片、CSS class 或 style 标签；文字用 font-family="sans-serif"，中文可以直接写。
+- 先画一个填满画布、颜色为 {{background}} 的背景矩形，其余颜色要与它对比清晰；节点不超过 20 个，连线用带箭头的线，可以加简短标注。

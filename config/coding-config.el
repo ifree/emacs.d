@@ -30,6 +30,21 @@
   :bind
   (("C-x g" . magit-status)))
 
+;; Explain the region or buffer with tree-sitter and the pi agent.
+(use-package code-insight
+  :ensure nil
+  :commands (frei/code-insight-history frei/code-insight-open-in-browser)
+  :bind
+  (("C-c a" . frei/code-insight)))
+
+(use-package diagram-tool
+  :ensure nil
+  :commands (frei/diagram-render-buffer frei/diagram-toggle-images))
+
+(use-package treesit-tool
+  :ensure nil
+  :commands frei/treesit-install-grammars)
+
 (provide 'coding-config)
 
 ;;; coding-config.el ends here
