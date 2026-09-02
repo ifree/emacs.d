@@ -5,6 +5,7 @@
 
 ;;; Code:
 (winner-mode 1)
+(windmove-default-keybindings)
 
 (defun frei/make-split-command (split-function)
   "Return a command that splits with SPLIT-FUNCTION and selects the new window."

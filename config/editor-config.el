@@ -9,6 +9,8 @@
 
 (defvar frei/config-directory)
 (defvar ispell-program-name)
+(defvar w32-pipe-read-delay)
+(defvar w32-pipe-buffer-size)
 (declare-function server-running-p "server")
 
 (defconst frei/state-directory
@@ -29,6 +31,10 @@
                frei/auto-save-directory))
   (make-directory directory t))
 
+;; The Windows locale would otherwise select Latin-1 and CRLF for new files.
+(set-language-environment "UTF-8")
+(setq-default buffer-file-coding-system 'utf-8-unix)
+
 (setq backup-by-copying t
       backup-directory-alist
       (list (cons "." frei/backup-directory))
@@ -44,6 +50,8 @@
       enable-recursive-minibuffers t
       sentence-end-double-space nil
       use-short-answers t
+      confirm-kill-processes nil
+      isearch-lazy-count t
       read-extended-command-predicate
       #'command-completion-default-include-p)
 
@@ -60,6 +68,9 @@
 
 (electric-pair-mode 1)
 (delete-selection-mode 1)
+(repeat-mode 1)
+(pixel-scroll-precision-mode 1)
+(global-so-long-mode 1)
 
 (when (fboundp 'context-menu-mode)
   (context-menu-mode 1))
@@ -84,7 +95,9 @@
   :custom
   (savehist-file
    (expand-file-name "history.eld" frei/state-directory))
-  (history-length 500))
+  (history-length 500)
+  (savehist-additional-variables
+   '(kill-ring search-ring regexp-search-ring)))
 
 (use-package saveplace
   :ensure nil
@@ -93,6 +106,41 @@
   :custom
   (save-place-file
    (expand-file-name "places.eld" frei/state-directory)))
+
+(use-package bookmark
+  :ensure nil
+  :custom
+  (bookmark-default-file
+   (expand-file-name "bookmarks.eld" frei/state-directory))
+  (bookmark-save-flag 1))
+
+(use-package transient
+  :ensure nil
+  :custom
+  (transient-history-file
+   (expand-file-name "transient/history.el" frei/state-directory))
+  (transient-levels-file
+   (expand-file-name "transient/levels.el" frei/state-directory))
+  (transient-values-file
+   (expand-file-name "transient/values.el" frei/state-directory)))
+
+;; Tramp defines this variable in its autoloads with the default value,
+;; which a Custom setting cannot override, so set it directly.
+(defvar tramp-persistency-file-name)
+(setq tramp-persistency-file-name
+      (expand-file-name "tramp.eld" frei/state-directory))
+
+(use-package nsm
+  :ensure nil
+  :custom
+  (nsm-settings-file
+   (expand-file-name "network-security.eld" frei/state-directory)))
+
+(use-package url
+  :ensure nil
+  :custom
+  (url-configuration-directory
+   (expand-file-name "url/" frei/state-directory)))
 
 (use-package which-key
   :ensure nil
@@ -108,6 +156,16 @@
   (vertico-mode 1)
   :custom
   (vertico-cycle t))
+
+(use-package vertico-directory
+  :ensure nil
+  :after vertico
+  :bind
+  (:map vertico-map
+        ("RET" . vertico-directory-enter)
+        ("DEL" . vertico-directory-delete-char)
+        ("M-DEL" . vertico-directory-delete-word))
+  :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
 
 (use-package orderless
   :ensure t
@@ -136,6 +194,9 @@
    ("C-c l" . consult-line)
    ("C-c t" . consult-goto-line)
    ("M-g g" . consult-goto-line)
+   ("M-g i" . consult-imenu)
+   ("M-g o" . consult-outline)
+   ("C-c f" . consult-recent-file)
    ("M-s l" . consult-line)
    ("M-s r" . consult-ripgrep)
    ("M-y" . consult-yank-pop))
@@ -149,6 +210,7 @@
   :custom
   (tab-always-indent 'complete)
   (text-mode-ispell-word-completion nil)
+  (corfu-auto t)
   (corfu-cycle t)
   (corfu-preselect 'prompt))
 
@@ -158,6 +220,11 @@
   :hook (corfu-mode . corfu-popupinfo-mode)
   :custom
   (corfu-popupinfo-delay '(0.5 . 0.2)))
+
+(use-package completion-preview
+  :ensure nil
+  :init
+  (global-completion-preview-mode 1))
 
 (use-package subword
   :ensure nil
@@ -178,7 +245,8 @@
   :bind
   (("C-x C-j" . dired-jump))
   :custom
-  (dired-dwim-target t))
+  (dired-dwim-target t)
+  (dired-kill-when-opening-new-dired-buffer t))
 
 (use-package dired-sidebar
   :ensure t
@@ -190,7 +258,11 @@
   :ensure t
   :hook
   ((prog-mode . diff-hl-mode)
-   (dired-mode . diff-hl-dired-mode)))
+   (dired-mode . diff-hl-dired-mode)
+   (magit-pre-refresh . diff-hl-magit-pre-refresh)
+   (magit-post-refresh . diff-hl-magit-post-refresh))
+  :config
+  (diff-hl-flydiff-mode 1))
 
 (use-package markdown-mode
   :ensure t
@@ -198,9 +270,13 @@
   (("\\.md\\'" . markdown-mode)
    ("\\.markdown\\'" . markdown-mode)))
 
-(use-package image-mode
+(use-package autorevert
   :ensure nil
-  :hook (image-mode . auto-revert-mode))
+  :init
+  (global-auto-revert-mode 1)
+  :custom
+  (auto-revert-avoid-polling t)
+  (global-auto-revert-non-file-buffers t))
 
 (let ((spell-checker
        (or (executable-find "hunspell")
@@ -209,6 +285,16 @@
     (require 'ispell)
     (setq ispell-program-name spell-checker)
     (add-hook 'prog-mode-hook #'flyspell-prog-mode)))
+
+(when (eq system-type 'windows-nt)
+  ;; Compacting font caches causes pauses with CJK fonts, and the default
+  ;; pipe settings make subprocesses such as git and rg slow.
+  (setq inhibit-compacting-font-caches t
+        w32-pipe-read-delay 0
+        w32-pipe-buffer-size (* 64 1024)
+        ;; Keep auto-detection for process output so GBK output from
+        ;; cmd.exe still decodes correctly.
+        default-process-coding-system '(undecided-dos . utf-8-unix)))
 
 (use-package server
   :ensure nil

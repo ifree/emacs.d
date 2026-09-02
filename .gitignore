@@ -7,7 +7,6 @@ auto-save-list/
 eln-cache/
 eshell/
 server/
-transient/
 var/
 custom.el
 /tramp

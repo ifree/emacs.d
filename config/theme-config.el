@@ -23,7 +23,8 @@
          (if buffer-file-name
              (abbreviate-file-name buffer-file-name)
            "%b")))
-      display-time-24hr-format t)
+      display-time-24hr-format t
+      mode-line-collapse-minor-modes t)
 
 (add-to-list 'default-frame-alist '(width . 120))
 (add-to-list 'default-frame-alist '(height . 40))
