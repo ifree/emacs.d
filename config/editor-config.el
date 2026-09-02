@@ -186,32 +186,6 @@
   :bind
   ([f8] . dired-sidebar-toggle-sidebar))
 
-(use-package project
-  :ensure nil
-  :bind
-  (([f7] . project-compile))
-  :custom
-  (project-list-file
-   (expand-file-name "projects.eld" frei/state-directory)))
-
-(defun frei/project-eshell ()
-  "Open an Eshell rooted at the current project."
-  (interactive)
-  (let ((display-buffer-alist
-         (cons
-          '("\\*.*eshell.*\\*"
-            (display-buffer-reuse-window display-buffer-at-bottom)
-            (window-height . 0.25))
-          display-buffer-alist)))
-    (if (project-current nil)
-        (project-eshell)
-      (eshell))))
-
-(use-package eshell
-  :ensure nil
-  :bind
-  (([f9] . frei/project-eshell)))
-
 (use-package diff-hl
   :ensure t
   :hook
