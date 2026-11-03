@@ -116,6 +116,7 @@
 
 (use-package bookmark
   :ensure nil
+  :defer t
   :custom
   (bookmark-default-file
    (expand-file-name "bookmarks.eld" frei/state-directory))
@@ -123,6 +124,7 @@
 
 (use-package transient
   :ensure nil
+  :defer t
   :custom
   (transient-history-file
    (expand-file-name "transient/history.el" frei/state-directory))
@@ -139,12 +141,14 @@
 
 (use-package nsm
   :ensure nil
+  :defer t
   :custom
   (nsm-settings-file
    (expand-file-name "network-security.eld" frei/state-directory)))
 
 (use-package url
   :ensure nil
+  :defer t
   :custom
   (url-configuration-directory
    (expand-file-name "url/" frei/state-directory)))
