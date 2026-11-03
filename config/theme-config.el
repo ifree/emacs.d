@@ -33,17 +33,31 @@
   '("Inconsolata" "Cascadia Code" "Menlo" "DejaVu Sans Mono" "Consolas")
   "Monospace font families to try for the default face, in order.")
 
+(defconst frei/cjk-font-candidates
+  '("Sarasa Mono SC" "Microsoft YaHei" "PingFang SC" "Noto Sans CJK SC")
+  "Font families to try for Chinese characters, in order.
+Without one, every Chinese character goes through the slow font
+fallback search and the glyphs come from mixed fonts.")
+
 (defun frei/apply-default-font (&optional frame)
-  "Use the first installed font of `frei/font-candidates' in graphical FRAME."
+  "Use the first installed candidate fonts in graphical FRAME.
+The default face gets one of `frei/font-candidates', Chinese
+characters one of `frei/cjk-font-candidates'."
   (let ((target-frame (or frame (selected-frame))))
     (when (display-graphic-p target-frame)
       (with-selected-frame target-frame
         (let* ((installed (font-family-list target-frame))
-               (font (seq-find (lambda (family) (member family installed))
-                               frei/font-candidates)))
+               (pick (lambda (candidates)
+                       (seq-find (lambda (family) (member family installed))
+                                 candidates)))
+               (font (funcall pick frei/font-candidates))
+               (cjk-font (funcall pick frei/cjk-font-candidates)))
           (when font
             (set-face-attribute
-             'default target-frame :family font :height 160)))))))
+             'default target-frame :family font :height 160))
+          (when cjk-font
+            (dolist (script '(han cjk-misc))
+              (set-fontset-font t script (font-spec :family cjk-font)))))))))
 
 (frei/apply-default-font)
 (add-hook 'after-make-frame-functions #'frei/apply-default-font)

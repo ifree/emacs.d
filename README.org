@@ -54,7 +54,8 @@ the browser.  Without =documd= the agent is asked for plain SVG instead.
 An ASCII art variant exists for documents and comments.
 
 Run =M-x frei/treesit-install-grammars= once to install the grammars;
-without them only the plain code is sent.
+without them only the plain code is sent.  The same grammars turn on
+the tree-sitter major modes in the =home= and =work= environments.
 
 * External tools
 

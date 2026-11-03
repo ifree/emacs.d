@@ -9,7 +9,6 @@
 
 (defvar frei/config-directory)
 (defvar ispell-program-name)
-(defvar w32-pipe-read-delay)
 (defvar w32-pipe-buffer-size)
 (declare-function server-running-p "server")
 
@@ -72,10 +71,18 @@
 (pixel-scroll-precision-mode 1)
 (global-so-long-mode 1)
 
-(when (fboundp 'context-menu-mode)
-  (context-menu-mode 1))
+(context-menu-mode 1)
 
+(defun frei/escape-quit ()
+  "Quit like `keyboard-escape-quit', but keep the window layout."
+  (interactive)
+  (let ((buffer-quit-function (or buffer-quit-function #'ignore)))
+    (keyboard-escape-quit)))
+
+;; Remap rather than bind, so that modes remapping `keyboard-escape-quit'
+;; themselves, such as Corfu, still take precedence.
 (global-set-key (kbd "<escape>") #'keyboard-escape-quit)
+(global-set-key [remap keyboard-escape-quit] #'frei/escape-quit)
 
 (use-package recentf
   :ensure nil
@@ -221,11 +228,6 @@
   :custom
   (corfu-popupinfo-delay '(0.5 . 0.2)))
 
-(use-package completion-preview
-  :ensure nil
-  :init
-  (global-completion-preview-mode 1))
-
 (use-package subword
   :ensure nil
   :hook (prog-mode . subword-mode))
@@ -250,7 +252,6 @@
 
 (use-package dired-sidebar
   :ensure t
-  :commands dired-sidebar-toggle-sidebar
   :bind
   ([f8] . dired-sidebar-toggle-sidebar))
 
@@ -259,16 +260,13 @@
   :hook
   ((prog-mode . diff-hl-mode)
    (dired-mode . diff-hl-dired-mode)
-   (magit-pre-refresh . diff-hl-magit-pre-refresh)
    (magit-post-refresh . diff-hl-magit-post-refresh))
   :config
   (diff-hl-flydiff-mode 1))
 
 (use-package markdown-mode
   :ensure t
-  :mode
-  (("\\.md\\'" . markdown-mode)
-   ("\\.markdown\\'" . markdown-mode)))
+  :defer t)
 
 (use-package autorevert
   :ensure nil
@@ -294,9 +292,8 @@
 
 (when (eq system-type 'windows-nt)
   ;; Compacting font caches causes pauses with CJK fonts, and the default
-  ;; pipe settings make subprocesses such as git and rg slow.
+  ;; pipe buffer makes subprocesses such as git and rg slow.
   (setq inhibit-compacting-font-caches t
-        w32-pipe-read-delay 0
         w32-pipe-buffer-size (* 64 1024)
         ;; Auto-detection would treat the NUL separated output of ripgrep
         ;; as binary, so decode process output as UTF-8.

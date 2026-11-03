@@ -640,8 +640,15 @@ because non-ASCII command line arguments do not survive on Windows."
     (if (fboundp 'markdown-mode) (markdown-mode) (text-mode)))
   (visual-line-mode 1)
   (frei/code-insight-mode 1)
+  (add-hook 'kill-buffer-hook #'frei/code-insight--stop-process nil t)
   (setq buffer-read-only t)
   (frei/code-insight--set-header (current-buffer) frei/code-insight--legend))
+
+(defun frei/code-insight--stop-process ()
+  "Stop the agent of a transcript that is going away.
+The process has no buffer of its own, so it would otherwise run on."
+  (when (process-live-p frei/code-insight--process)
+    (delete-process frei/code-insight--process)))
 
 (defun frei/code-insight--source-key (buffer)
   "Return the key identifying the source BUFFER in a transcript."
@@ -1262,12 +1269,11 @@ the transcript as Markdown."
                            nil nil default))))
   (let ((diagram (frei/code-insight--diagram-at-point)))
     (if (and diagram (member (downcase (or (file-name-extension file) "")) '("png" "svg")))
-        (let ((data (plist-get (cdr (overlay-get diagram 'display)) :data)))
-          (with-temp-buffer
-            (set-buffer-multibyte nil)
-            (insert data)
-            (let ((coding-system-for-write 'binary))
-              (write-region (point-min) (point-max) file))))
+        (let ((data (plist-get (cdr (overlay-get diagram 'display)) :data))
+              (coding-system-for-write 'binary))
+          ;; PNG data is already bytes; SVG source is text.
+          (write-region (if (multibyte-string-p data) (encode-coding-string data 'utf-8) data)
+                        nil file))
       (let ((coding-system-for-write 'utf-8-unix))
         (write-region (point-min) (point-max) file)))
     (message "已保存到 %s" (abbreviate-file-name file))))

@@ -6,9 +6,9 @@
 ;;; Code:
 (setq gc-cons-threshold most-positive-fixnum
       gc-cons-percentage 0.6
+      load-prefer-newer t
       frame-inhibit-implied-resize t
-      inhibit-startup-screen t
-      inhibit-startup-message t)
+      inhibit-startup-screen t)
 
 (add-hook 'emacs-startup-hook
           (lambda ()

@@ -93,11 +93,12 @@
       (insert-file-contents-literally file)
       (buffer-string))))
 
-(defun frei/diagram-render (format source callback)
+(defun frei/diagram-render (format source callback &optional buffer)
   "Render SOURCE in FORMAT and call CALLBACK with an image, or nil on failure.
-The image is an image spec suitable for `insert-image'."
+The image is an image spec suitable for `insert-image'.  BUFFER is
+where the image will be shown; see `frei/diagram--image'."
   (if (eq format 'svg)
-      (funcall callback (frei/diagram--image source 'svg))
+      (funcall callback (frei/diagram--image source 'svg buffer))
     (let* ((input (frei/diagram--work-file (cdr (assq format frei/diagram-formats))))
            (output (concat (file-name-sans-extension input) ".png"))
            (log (generate-new-buffer " *diagram*"))
@@ -121,12 +122,15 @@ The image is an image spec suitable for `insert-image'."
              (kill-buffer log)
              (ignore-errors (delete-file input))
              (ignore-errors (delete-file output))
-             (funcall callback (and bytes (frei/diagram--image bytes 'png))))))))))
+             (funcall callback (and bytes (frei/diagram--image bytes 'png buffer))))))))))
 
 ;;;; Inline images
 
-(defun frei/diagram--image (data type)
-  "Return an image showing DATA of image TYPE, or nil when it cannot be shown."
+(defun frei/diagram--image (data type &optional buffer)
+  "Return an image showing DATA of image TYPE, or nil when it cannot be shown.
+The image is no wider than the window showing BUFFER.  Rendering often
+ends while another window is selected, so the selected window is only
+the fallback for a BUFFER that is not shown."
   (when (and (display-images-p) (image-type-available-p type))
     (let* ((data (if (and (eq type 'svg) (not (string-match-p "xmlns=" data)))
                      (replace-regexp-in-string
@@ -143,7 +147,10 @@ The image is an image spec suitable for `insert-image'."
                                      :scale scale
                                      :background (if (eq type 'png) "white"
                                                    (frei/diagram--background))
-                                     :max-width (- (window-body-width nil t) 40))))
+                                     :max-width (- (window-body-width
+                                                    (and buffer (get-buffer-window buffer t))
+                                                    t)
+                                                   40))))
             ;; Rendering now reveals data that the image library rejects.
             (image-size image t)
             image)
@@ -202,7 +209,8 @@ Return the number of blocks being rendered."
         (setq count (1+ count))
         (frei/diagram-render
          format source
-         (lambda (image) (frei/diagram--show buffer block-start block-end image)))))
+         (lambda (image) (frei/diagram--show buffer block-start block-end image))
+         buffer)))
     count))
 
 ;;;###autoload
