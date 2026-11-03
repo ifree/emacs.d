@@ -261,10 +261,25 @@
   (dired-dwim-target t)
   (dired-kill-when-opening-new-dired-buffer t))
 
+(defun frei/dired-sidebar-follow-p (&rest _)
+  "Return non-nil when the sidebar should follow the selected window.
+Only file buffers count: for others `dired-sidebar' would move to their
+`default-directory', such as the home directory for *Messages*."
+  (buffer-file-name (window-buffer)))
+
 (use-package dired-sidebar
   :ensure t
   :bind
-  ([f8] . dired-sidebar-toggle-sidebar))
+  ([f8] . dired-sidebar-toggle-sidebar)
+  :custom
+  (dired-sidebar-should-follow-file t)
+  :config
+  (advice-add 'dired-sidebar-follow-file :before-while #'frei/dired-sidebar-follow-p))
+
+;; Lets the sidebar expand folders in place with TAB.
+(use-package dired-subtree
+  :ensure t
+  :defer t)
 
 (use-package diff-hl
   :ensure t
