@@ -7,6 +7,7 @@
 (require 'theme-config)
 (require 'window-config)
 (require 'editor-config)
+(require 'project-config)
 
 (provide 'base-config)
 

@@ -25,6 +25,45 @@ In-buffer completion is provided by Corfu.
 
 Packages are installed through GNU ELPA, NonGNU ELPA, and MELPA on first use.
 
+* Projects
+
+Projects are handled by the built-in =project.el=, extended by
+=lisp/project-tool.el=, and may live anywhere.  A Git repository is a
+project; so is a folder outside version control that holds a
+=CMakeLists.txt=, =package.json=, =pyproject.toml=, =Cargo.toml=,
+=go.mod= or =*.uproject=, the outermost such folder being the root.
+=C-x p a= makes any folder a project.  Added folders and favorites come
+first, so one module of a large repository or of Unreal Engine can be a
+project of its own.  The files of a project outside version control are
+listed with =rg=, leaving out =node_modules=, =build=, the =Intermediate=,
+=Binaries=, =Saved= and =DerivedDataCache= folders of Unreal Engine and
+similar build output; the 196,000 files of Unreal Engine 5.8 take a
+third of a second.
+
+=C-x p p= switches project and offers a menu: =f= file, =r= ripgrep,
+=b= buffer, =d= the project in the Dired sidebar, =m= Magit, =e= Eshell,
+=c= compile, =o= any other command.  =C-x p D= also opens the sidebar,
+switching an open one to the project; =F8= still toggles it, and =C-x d=
+is plain Dired.  =F7= compiles and =F9= opens an Eshell at the bottom of
+the frame, both in the project root.  Results of =C-x p g= can be edited in
+place with =e= and saved with =C-c C-c=.
+
+Important projects go into =frei/project-favorites= with a short
+description, through =M-x frei/project-add-favorite= or =M-x
+customize-option=.  Favorites and added folders live in =custom.el=, so
+they stay on the machine and out of the repository.  Favorites are
+always offered by =C-x p p=.  Emacs started without files shows the
+project list, the favorites followed by the recent projects; =C-x p l=
+brings it back.  Each line shows when the newest file of the project
+changed, among the files =C-x p f= offers.  =rg= finds the times in the
+background and they are cached in =var/project-times.eld=: a project
+scanned in under two seconds is looked up whenever the list is shown,
+a larger one at most once an hour, and saving a file from Emacs updates
+its project at once.  In the list =RET= opens a project, =a= adds the
+one at point to the favorites, =d= removes it from the favorites, the
+added folders and the known projects, =g= looks up every time again and
+=q= quits.
+
 * Code analysis
 
 =C-c a= sends the region or the buffer to the =pi= agent together with a

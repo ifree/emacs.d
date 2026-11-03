@@ -139,6 +139,13 @@
 (setq tramp-persistency-file-name
       (expand-file-name "tramp.eld" frei/state-directory))
 
+(use-package eshell
+  :ensure nil
+  :defer t
+  :custom
+  (eshell-directory-name
+   (expand-file-name "eshell/" frei/state-directory)))
+
 (use-package nsm
   :ensure nil
   :defer t
