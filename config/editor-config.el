@@ -8,6 +8,7 @@
 (require 'search-tool)
 
 (defvar frei/config-directory)
+(defvar diff-hl-dired-process-buffer)
 (defvar ispell-program-name)
 (defvar w32-pipe-buffer-size)
 (declare-function server-running-p "server")
@@ -281,6 +282,15 @@ Only file buffers count: for others `dired-sidebar' would move to their
   :ensure t
   :defer t)
 
+(defun frei/diff-hl-dired-cancel-pending-update ()
+  "Cancel the previous status query before reusing its output buffer.
+Merely signaling the process lets its sentinel start another Git command
+in the reused buffer, whose cleanup can then prompt to kill that command."
+  (when (buffer-live-p diff-hl-dired-process-buffer)
+    (when-let* ((process (get-buffer-process diff-hl-dired-process-buffer)))
+      (set-process-sentinel process #'ignore)
+      (delete-process process))))
+
 (use-package diff-hl
   :ensure t
   :hook
@@ -288,7 +298,10 @@ Only file buffers count: for others `dired-sidebar' would move to their
    (dired-mode . diff-hl-dired-mode)
    (magit-post-refresh . diff-hl-magit-post-refresh))
   :config
-  (diff-hl-flydiff-mode 1))
+  (diff-hl-flydiff-mode 1)
+  (with-eval-after-load 'diff-hl-dired
+    (advice-add 'diff-hl-dired-update :before
+                #'frei/diff-hl-dired-cancel-pending-update)))
 
 (use-package markdown-mode
   :ensure t
