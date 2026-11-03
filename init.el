@@ -24,6 +24,15 @@
         ("nongnu" . 20)
         ("melpa" . 10)))
 
+;; The MSYS gpg of Git for Windows cannot open a keyring under a C:/
+;; directory, so every package signature check fails with it.  Prefer
+;; the native GnuPG.  epg only takes a value set through Customize, which
+;; `setopt' does not count as; otherwise it searches PATH again.
+(when (eq system-type 'windows-nt)
+  (let ((gpg (expand-file-name "GnuPG/bin/gpg.exe" (getenv "ProgramFiles"))))
+    (when (file-executable-p gpg)
+      (customize-set-variable 'epg-gpg-program gpg))))
+
 (setq custom-file (expand-file-name "custom.el" frei/config-directory))
 (load custom-file 'noerror 'nomessage)
 
