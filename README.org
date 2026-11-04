@@ -88,6 +88,9 @@ preserved, repeated diagrams are cached, and edits refresh after a
 short idle delay.  Colors follow the Emacs theme and diagrams fit the
 window.  Invalid diagrams keep their source and report an error.
 
+Files dropped into Markdown buffers open in Emacs using its standard
+file handlers, including when =*scratch*= is in Markdown mode.
+
 Install the local renderer dependency with Node 20 or newer:
 
 #+begin_src sh

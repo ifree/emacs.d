@@ -314,9 +314,17 @@ in the reused buffer, whose cleanup can then prompt to kill that command."
     (advice-add 'diff-hl-dired-update :before
                 #'frei/diff-hl-dired-cancel-pending-update)))
 
+(defun frei/markdown-open-dropped-files ()
+  "Use Emacs file-opening handlers for files dropped into Markdown buffers."
+  (require 'dnd)
+  ;; This markdown-mode version's default `file-link' action is ignored.
+  ;; Its multi-file handler also inserts spaces even when opening files.
+  (setq-local dnd-protocol-alist (copy-tree (default-value 'dnd-protocol-alist))))
+
 (use-package markdown-mode
   :ensure t
-  :defer t)
+  :defer t
+  :hook (markdown-mode . frei/markdown-open-dropped-files))
 
 (use-package markdown-mermaid
   :ensure nil
