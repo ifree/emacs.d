@@ -4,7 +4,7 @@
 ;; The built-in project.el with project-tool.el: any folder can be a
 ;; project, and Emacs started without files shows the favorite and
 ;; recent projects.  F7 compiles and F9 opens Eshell in the project root;
-;; the project commands show folders in `dired-sidebar' rather than Dired.
+;; C-x p p opens the project's tab and sidebar, then offers its commands.
 
 ;;; Code:
 (require 'seq)
@@ -33,6 +33,13 @@ the project instead of closing, which suits switching projects."
     (dired-sidebar-toggle-sidebar root)
     (select-window (get-buffer-window (dired-sidebar-buffer)))))
 
+(defun frei/project-tab-sidebar ()
+  "Show the sidebar in a new project tab, leaving its main window selected."
+  (save-selected-window
+    (frei/project-sidebar)))
+
+(add-hook 'frei/project-tab-open-hook #'frei/project-tab-sidebar)
+
 (add-to-list 'display-buffer-alist
              '("\\`\\*.*eshell\\*"
                (display-buffer-reuse-window display-buffer-at-bottom)
@@ -48,8 +55,10 @@ the project instead of closing, which suits switching projects."
   (([f7] . project-compile)
    ([f9] . frei/project-eshell)
    :map project-prefix-map
+   ("p" . frei/project-switch-project)
    ("a" . frei/project-add-directory)
    ("b" . consult-project-buffer)
+   ("TAB" . frei/project-previous-tab)
    ("D" . frei/project-sidebar)
    ("l" . frei/project-list))
   :custom

@@ -40,13 +40,25 @@ listed with =rg=, leaving out =node_modules=, =build=, the =Intermediate=,
 similar build output; the 196,000 files of Unreal Engine 5.8 take a
 third of a second.
 
-=C-x p p= switches project and offers a menu: =f= file, =r= ripgrep,
-=b= buffer, =d= the project in the Dired sidebar, =m= Magit, =e= Eshell,
-=c= compile, =o= any other command.  =C-x p D= also opens the sidebar,
-switching an open one to the project; =F8= still toggles it, and =C-x d=
-is plain Dired.  =F7= compiles and =F9= opens an Eshell at the bottom of
-the frame, both in the project root.  Results of =C-x p g= can be edited in
-place with =e= and saved with =C-c C-c=.
+=C-x p p= selects a project's =tab-bar= tab, then offers the project
+commands: =f= file, =r= ripgrep, =b= buffer, =d= sidebar, =m= Magit,
+=e= Eshell, =c= compile, =o= any other command.  An already open project
+reuses its tab; a new one shows an existing project file buffer,
+another project buffer, or its root directory, with the sidebar open
+and the main window selected.
+Projects are matched by their full root path, so equally named folders
+can have separate tabs.  Tabs last for the current Emacs session.
+
+=C-x p TAB= returns to the previous project tab.  =C-x t o= and =C-x t O=
+cycle all tabs, and =C-x t 0= closes the current tab.  The tab bar appears
+when more than one tab is open.  =C-c left= and =C-c right= undo and redo
+window layouts within the current tab, using =tab-bar-history-mode=.
+
+=C-x p f= finds a project file, =C-x p b= switches project buffers,
+and =C-x p D= shows the project in the sidebar.  =F8= toggles the sidebar,
+and =C-x d= opens plain Dired.  =F7= compiles and =F9= opens an Eshell at
+the bottom of the frame, both in the project root.  Results of =C-x p g=
+can be edited in place with =e= and saved with =C-c C-c=.
 
 Important projects go into =frei/project-favorites= with a short
 description, through =M-x frei/project-add-favorite= or =M-x

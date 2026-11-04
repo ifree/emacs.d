@@ -17,13 +17,17 @@
 ;;   the size of Unreal Engine takes seconds, so the times are found in
 ;;   the background, cached, and looked up again only now and then for
 ;;   large projects.
+;; - `frei/project-switch-tab' opens or selects a project tab, using
+;;   project.el and tab-bar.  Tabs live only in the current session.
 ;;
 ;; Favorites and added folders live in `custom-file', so every machine
 ;; keeps its own and none of it reaches the repository.
 
 ;;; Code:
 (require 'cl-lib)
+(require 'project)
 (require 'seq)
+(require 'tab-bar)
 
 (defvar project-files-relative-names)
 (declare-function project-root "project")
@@ -38,7 +42,7 @@
 (defcustom frei/project-favorites nil
   "Projects to keep at hand, as lists of a directory and a description.
 They head the project list and are always offered by
-\\[project-switch-project].  Like added folders, a favorite is a
+\\[frei/project-switch-project].  Like added folders, a favorite is a
 project of its own even inside a larger one.
 `frei/project-add-favorite' adds one."
   :type '(repeat (list (directory :tag "Directory")
@@ -188,6 +192,97 @@ expanding them takes a second on a project the size of Unreal Engine."
       (project-remember-project
        (cons 'frei/directory (file-name-as-directory (expand-file-name directory)))
        t t))))
+
+;;;; Project tabs
+
+(defvar frei/project-tab-open-hook nil
+  "Hook run in a new project tab after selecting its initial buffer.")
+
+(defun frei/project--current-tab ()
+  "Return the current tab in the selected frame."
+  (seq-find (lambda (tab) (eq (car tab) 'current-tab)) (tab-bar-tabs)))
+
+(defun frei/project--tab-index (root)
+  "Return the zero-based index of ROOT's tab, or nil if none exists."
+  (seq-position
+   (tab-bar-tabs) root
+   (lambda (tab directory)
+     (when-let* ((other (alist-get 'frei/project-root tab)))
+       (frei/project--same-directory-p other directory)))))
+
+(defun frei/project--name-tab (root)
+  "Associate the current tab with ROOT and give it a unique short name."
+  (let* ((tab (frei/project--current-tab))
+         (base (file-name-nondirectory (directory-file-name root)))
+         (names (mapcar (lambda (other) (alist-get 'name other))
+                        (remq tab (tab-bar-tabs))))
+         (name base)
+         (number 1))
+    (while (member name names)
+      (setq number (1+ number)
+            name (format "%s<%d>" base number)))
+    (setf (alist-get 'frei/project-root (cdr tab)) root)
+    (tab-bar-rename-tab name)))
+
+(defun frei/project--adopt-tab ()
+  "Associate an unassigned tab with the project already being edited.
+Ignore project.el's temporary target override during project switching.
+Scratch and project-list buffers do not turn into project tabs just
+because they inherited a project directory."
+  (when (and (not (alist-get 'frei/project-root (frei/project--current-tab)))
+             (or buffer-file-name
+                 (derived-mode-p 'dired-mode 'eshell-mode 'compilation-mode 'magit-mode)))
+    (let ((project-current-directory-override nil))
+      (when-let* ((project (project-current nil)))
+        (let ((root (file-name-as-directory (expand-file-name (project-root project)))))
+          (unless (frei/project--tab-index root)
+            (frei/project--name-tab root)))))))
+
+;;;###autoload
+(defun frei/project-switch-tab (&optional directory)
+  "Select the tab for DIRECTORY's project, creating one when necessary.
+DIRECTORY defaults to the current project.  A new tab shows an existing
+project file buffer, another project buffer, or the root directory,
+then runs `frei/project-tab-open-hook'.  No session file is written."
+  (interactive)
+  (let* ((project (if directory
+                      (let ((project-current-directory-override nil))
+                        (project-current t directory))
+                    (project-current t)))
+         (root (file-name-as-directory (expand-file-name (project-root project)))))
+    (frei/project--adopt-tab)
+    (let ((index (frei/project--tab-index root)))
+      (if index
+          (tab-bar-select-tab (1+ index))
+        (let* ((buffers (project-buffers project))
+               (buffer (or (seq-find #'buffer-file-name buffers)
+                           (car buffers)
+                           (dired-noselect root)))
+               (tab-bar-new-tab-choice (lambda () buffer)))
+          (tab-bar-new-tab)
+          (frei/project--name-tab root)
+          (run-hooks 'frei/project-tab-open-hook))))))
+
+;;;###autoload
+(defun frei/project-switch-project (directory)
+  "Select DIRECTORY's project tab, then offer project.el's command menu."
+  (interactive (list (funcall project-prompter)))
+  (frei/project-switch-tab directory)
+  (project-switch-project directory))
+
+;;;###autoload
+(defun frei/project-previous-tab ()
+  "Switch to the most recently used other project tab in this frame."
+  (interactive)
+  (let* ((candidates
+          (cl-loop for tab in (tab-bar-tabs)
+                   for index from 1
+                   when (and (not (eq (car tab) 'current-tab))
+                             (alist-get 'frei/project-root tab))
+                   collect (cons index (or (alist-get 'time tab) 0))))
+         (recent (car (sort candidates (lambda (a b) (> (cdr a) (cdr b)))))))
+    (unless recent (user-error "No other project tab"))
+    (tab-bar-select-tab (car recent))))
 
 ;;;; Adding and removing
 
@@ -396,7 +491,7 @@ Only projects that already have a cached time are touched."
               (unless (frei/project--exists-p directory)
                 (user-error "%s no longer exists; d removes it"
                             (abbreviate-file-name directory)))
-              (project-switch-project directory)))
+              (frei/project-switch-project directory)))
   'face nil
   'follow-link t
   'help-echo "Switch to this project")

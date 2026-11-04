@@ -4,7 +4,16 @@
 ;; Window history, selection, and predictable split behavior.
 
 ;;; Code:
-(winner-mode 1)
+(use-package tab-bar
+  :ensure nil
+  :custom
+  (tab-bar-show 1)
+  (tab-bar-new-tab-choice "*scratch*")
+  :config
+  (tab-bar-mode 1)
+  ;; Keep C-c left/right for layout undo within the current tab.
+  (winner-mode -1)
+  (tab-bar-history-mode 1))
 
 (defun frei/make-split-command (split-function)
   "Return a command that splits with SPLIT-FUNCTION and selects the new window."
