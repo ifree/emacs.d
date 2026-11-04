@@ -122,6 +122,67 @@
     (should-not frei/markdown-mermaid--overlays)
     (should-not frei/markdown-mermaid--process)))
 
+(ert-deftest frei/markdown-mermaid-zoom-is-local-and-survives-refresh ()
+  (frei/markdown-mermaid-test--buffer
+      "```mermaid\nflowchart TD\n A --> B\n```\n\n```mermaid\nflowchart TD\n A --> B\n```\n"
+    (let ((text (buffer-string)))
+      (frei/markdown-mermaid-refresh)
+      (frei/markdown-mermaid-test--wait)
+      (goto-char (point-min))
+      (let* ((overlay (car frei/markdown-mermaid--overlays))
+             (other (cadr frei/markdown-mermaid--overlays))
+             (other-image (overlay-get other 'display))
+             (original (plist-get (cdr (overlay-get overlay 'display)) :scale))
+             (cache-count (hash-table-count frei/markdown-mermaid--cache)))
+        (frei/markdown-mermaid-increase-size)
+        (should (< (abs (- (plist-get (cdr (overlay-get overlay 'display)) :scale)
+                           (* 1.2 original))) 0.00001))
+        (should (eq other-image (overlay-get other 'display)))
+        (should-not frei/markdown-mermaid--process)
+        (should (= cache-count (hash-table-count frei/markdown-mermaid--cache)))
+        (frei/markdown-mermaid-toggle-block)
+        (frei/markdown-mermaid-toggle-block)
+        (frei/markdown-mermaid-refresh t)
+        (frei/markdown-mermaid-test--wait)
+        (should (= (overlay-get overlay 'scale) 1.2))
+        (should (< (abs (- (plist-get (cdr (overlay-get overlay 'display)) :scale)
+                           (* 1.2 original))) 0.00001))
+        (frei/markdown-mermaid-decrease-size)
+        (should (< (abs (- (plist-get (cdr (overlay-get overlay 'display)) :scale)
+                           original)) 0.00001))
+        (should (equal text (buffer-string)))))))
+
+(ert-deftest frei/markdown-mermaid-zoom-can-exceed-window-and-reset-to-fit ()
+  (frei/markdown-mermaid-test--buffer
+      "```mermaid\nflowchart TD\n A --> B\n```\n"
+    (cl-letf (((symbol-function 'frei/markdown-mermaid--window-width) (lambda () 100)))
+      (frei/markdown-mermaid--sync (frei/markdown-mermaid--settings))
+      (let ((overlay (car frei/markdown-mermaid--overlays)))
+        (puthash (overlay-get overlay 'key)
+                 '((svg . "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"400\" height=\"100\"><rect width=\"400\" height=\"100\"/></svg>")
+                   (width . 400) (height . 100))
+                 frei/markdown-mermaid--cache)
+        (frei/markdown-mermaid--display)
+        (goto-char (point-min))
+        (should (= (plist-get (cdr (overlay-get overlay 'display)) :scale) 0.25))
+        (frei/markdown-mermaid-increase-size)
+        (let ((properties (cdr (overlay-get overlay 'display))))
+          (should (= (plist-get properties :scale) 0.3))
+          (should-not (plist-get properties :max-width)))
+        (frei/markdown-mermaid-reset-size)
+        (should (= (plist-get (cdr (overlay-get overlay 'display)) :scale) 0.25))))))
+
+(ert-deftest frei/markdown-mermaid-resize-needs-a-displayed-diagram ()
+  (frei/markdown-mermaid-test--buffer
+      "Text\n\n```mermaid\nflowchart TD\n A --> B\n```\n"
+    (frei/markdown-mermaid-refresh)
+    (frei/markdown-mermaid-test--wait)
+    (goto-char (point-min))
+    (should-error (frei/markdown-mermaid-increase-size) :type 'user-error)
+    (goto-char (overlay-start (car frei/markdown-mermaid--overlays)))
+    (frei/markdown-mermaid-toggle-block)
+    (should-error (frei/markdown-mermaid-increase-size) :type 'user-error)))
+
 (ert-deftest frei/markdown-mermaid-disable-cleans-up-in-flight-rendering ()
   (frei/markdown-mermaid-test--buffer
       "```mermaid\nflowchart TD\n A --> B\n```\n"

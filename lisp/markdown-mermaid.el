@@ -4,6 +4,7 @@
 ;; `frei/markdown-mermaid-mode' displays closed Mermaid fences as SVG.
 ;; Pele runs in a local Node process, once per batch of uncached diagrams.
 ;; C-c C-x m toggles the block at point; C-c C-x M toggles every block.
+;; C-c C-x +, - and 0 resize the diagram at point relative to window fit.
 ;; Source text is preserved, including when a diagram cannot be rendered.
 
 ;;; Code:
@@ -169,13 +170,17 @@ are ignored and fence lengths and indentation follow `markdown-mode'."
         (frei/markdown-mermaid--report error-message))
        ((and svg (not (overlay-get overlay 'display)))
         (condition-case error-data
-            (let ((image (create-image (encode-coding-string svg 'utf-8-unix) 'svg t
-                                       :scale 1.0 :ascent 'center
-                                       :max-width (frei/markdown-mermaid--window-width))))
+            (let* ((width (max 1 (or (alist-get 'width result) 1)))
+                   (fit (min 1.0 (/ (frei/markdown-mermaid--window-width) (float width))))
+                   (scale (* fit (or (overlay-get overlay 'scale) 1.0)))
+                   ;; A fixed :max-width would also cap manual zooming.
+                   ;; Apply the initial fit through :scale instead.
+                   (image (create-image (encode-coding-string svg 'utf-8-unix) 'svg t
+                                        :scale scale :ascent 'center)))
               (image-size image t)
               (overlay-put overlay 'display image)
               (overlay-put overlay 'help-echo
-                           "Mermaid diagram; C-c C-x m toggles its source"))
+                           "Mermaid: C-c C-x + / - / 0 resize; C-c C-x m shows source"))
           (error (frei/markdown-mermaid--report (error-message-string error-data))))))
       (let ((shown (overlay-get overlay 'display)))
         (overlay-put overlay 'face (and shown 'default))
@@ -335,16 +340,20 @@ With prefix argument FORCE, discard cached results and retry failed blocks."
   (setq frei/markdown-mermaid--overlays nil
         frei/markdown-mermaid--cache nil))
 
+(defun frei/markdown-mermaid--overlay-at-point ()
+  "Return the Mermaid block overlay at point, or signal a user error."
+  (or (seq-find (lambda (item)
+                  (and (overlay-buffer item)
+                       (<= (overlay-start item) (point))
+                       (<= (point) (overlay-end item))))
+                frei/markdown-mermaid--overlays)
+      (user-error "No closed Mermaid block at point")))
+
 ;;;###autoload
 (defun frei/markdown-mermaid-toggle-block ()
   "Toggle the Mermaid diagram at point between image and source."
   (interactive)
-  (let ((overlay (seq-find (lambda (item)
-                            (and (overlay-buffer item)
-                                 (<= (overlay-start item) (point))
-                                 (<= (point) (overlay-end item))))
-                          frei/markdown-mermaid--overlays)))
-    (unless overlay (user-error "No closed Mermaid block at point"))
+  (let ((overlay (frei/markdown-mermaid--overlay-at-point)))
     (overlay-put overlay 'source-visible (not (overlay-get overlay 'source-visible)))
     (frei/markdown-mermaid-refresh)))
 
@@ -358,13 +367,51 @@ With prefix argument FORCE, discard cached results and retry failed blocks."
       (overlay-put overlay 'source-visible nil)))
   (frei/markdown-mermaid-refresh))
 
+(defun frei/markdown-mermaid--resize (factor)
+  "Multiply the current diagram's zoom by FACTOR, or reset it when nil."
+  (let ((overlay (frei/markdown-mermaid--overlay-at-point)))
+    (unless (overlay-get overlay 'display)
+      (user-error "Show the Mermaid image before resizing it"))
+    (let ((scale (if factor
+                     (max 0.1 (min 8.0 (* factor (or (overlay-get overlay 'scale) 1.0))))
+                   1.0)))
+      (overlay-put overlay 'scale scale)
+      (overlay-put overlay 'display nil)
+      (frei/markdown-mermaid--display)
+      (message "Mermaid: %d%% of fitted size" (round (* 100 scale))))))
+
+;;;###autoload
+(defun frei/markdown-mermaid-increase-size (&optional steps)
+  "Enlarge the Mermaid image at point by 20 percent per STEPS.
+Zoom is relative to the image's fitted size, and is kept across refreshes."
+  (interactive "p")
+  (frei/markdown-mermaid--resize (expt 1.2 (or steps 1))))
+
+;;;###autoload
+(defun frei/markdown-mermaid-decrease-size (&optional steps)
+  "Shrink the Mermaid image at point by one zoom step per STEPS."
+  (interactive "p")
+  (frei/markdown-mermaid--resize (expt 1.2 (- (or steps 1)))))
+
+;;;###autoload
+(defun frei/markdown-mermaid-reset-size ()
+  "Restore the current Mermaid image to its fitted size."
+  (interactive)
+  (frei/markdown-mermaid--resize nil))
+
 (defvar frei/markdown-mermaid-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-x m") #'frei/markdown-mermaid-toggle-block)
-    (define-key map (kbd "C-c C-x M") #'frei/markdown-mermaid-toggle-images)
-    (define-key map (kbd "C-c C-x r") #'frei/markdown-mermaid-refresh)
-    map)
+  (make-sparse-keymap)
   "Keys for Mermaid images in Markdown buffers.")
+
+;; Update the existing map as well when this file is reloaded.
+(dolist (binding '(("C-c C-x m" . frei/markdown-mermaid-toggle-block)
+                   ("C-c C-x M" . frei/markdown-mermaid-toggle-images)
+                   ("C-c C-x r" . frei/markdown-mermaid-refresh)
+                   ("C-c C-x +" . frei/markdown-mermaid-increase-size)
+                   ("C-c C-x =" . frei/markdown-mermaid-increase-size)
+                   ("C-c C-x -" . frei/markdown-mermaid-decrease-size)
+                   ("C-c C-x 0" . frei/markdown-mermaid-reset-size)))
+  (define-key frei/markdown-mermaid-mode-map (kbd (car binding)) (cdr binding)))
 
 ;;;###autoload
 (define-minor-mode frei/markdown-mermaid-mode
@@ -372,7 +419,9 @@ With prefix argument FORCE, discard cached results and retry failed blocks."
 Rendering happens asynchronously after opening or editing a document.
 Use \\[frei/markdown-mermaid-toggle-block] to reveal a block's source,
 \\[frei/markdown-mermaid-toggle-images] to toggle all diagrams, and
-\\[frei/markdown-mermaid-refresh] to refresh (with a prefix, retry errors)."
+\\[frei/markdown-mermaid-refresh] to refresh (with a prefix, retry errors).
+Resize the image at point with \\[frei/markdown-mermaid-increase-size],
+\\[frei/markdown-mermaid-decrease-size] and \\[frei/markdown-mermaid-reset-size]."
   :lighter " Mermaid"
   (if frei/markdown-mermaid-mode
       (if (not (derived-mode-p 'markdown-mode))

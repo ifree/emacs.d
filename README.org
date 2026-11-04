@@ -84,7 +84,13 @@ In a Markdown buffer:
 - =C-c C-x m=: toggle the diagram at point between SVG and source
 - =C-c C-x M=: toggle all Mermaid diagrams in the buffer
 - =C-c C-x r=: refresh; with =C-u=, clear the cache and retry errors
+- =C-c C-x += (or ~C-c C-x =~): enlarge the diagram at point
+- =C-c C-x -=: shrink the diagram at point
+- =C-c C-x 0=: restore the diagram's fitted size
 - =M-x frei/markdown-mermaid-mode=: enable or disable inline Mermaid
+
+Zoom is kept across refreshes and source toggles.  An enlarged image
+can extend past the window; =C-x <= and =C-x >= scroll horizontally.
 
 =examples/markdown-mermaid.md= contains Chinese flowchart and sequence
 examples.  Ordinary image links and hidden Markdown markup remain
