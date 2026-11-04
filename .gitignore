@@ -3,6 +3,7 @@
 *.eld
 *~
 elpa/
+node_modules/
 auto-save-list/
 eln-cache/
 eshell/

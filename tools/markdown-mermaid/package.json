@@ -1,0 +1,14 @@
+{
+  "name": "emacs-markdown-mermaid",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test render.test.mjs"
+  },
+  "dependencies": {
+    "pele": "1.13.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -64,6 +64,40 @@ one at point to the favorites, =d= removes it from the favorites, the
 added folders and the known projects, =g= looks up every time again and
 =q= quits.
 
+* Markdown reading
+
+Markdown buffers (including GFM and their viewing modes) enable
+=frei/markdown-mermaid-mode=.  Closed =mermaid= fences are rendered
+as inline SVG by Pele in a background Node process.  Source text is
+preserved, repeated diagrams are cached, and edits refresh after a
+short idle delay.  Colors follow the Emacs theme and diagrams fit the
+window.  Invalid diagrams keep their source and report an error.
+
+Install the local renderer dependency with Node 20 or newer:
+
+#+begin_src sh
+npm ci --prefix tools/markdown-mermaid
+#+end_src
+
+In a Markdown buffer:
+
+- =C-c C-x m=: toggle the diagram at point between SVG and source
+- =C-c C-x M=: toggle all Mermaid diagrams in the buffer
+- =C-c C-x r=: refresh; with =C-u=, clear the cache and retry errors
+- =M-x frei/markdown-mermaid-mode=: enable or disable inline Mermaid
+
+=examples/markdown-mermaid.md= contains Chinese flowchart and sequence
+examples.  Ordinary image links and hidden Markdown markup remain
+available through =markdown-toggle-inline-images= and
+=markdown-toggle-markup-hiding=.  =M-x markdown-view-mode= provides
+read-only viewing with markup hidden.
+
+The integration lives in =lisp/markdown-mermaid.el=; its renderer and
+pinned npm dependency are in =tools/markdown-mermaid/=.  Rendering
+requires a graphical Emacs with SVG support; terminal buffers keep
+showing the source.  Set =frei/markdown-mermaid-font-family= to override
+the automatically selected label font.
+
 * Code analysis
 
 =C-c a= sends the region or the buffer to the =pi= agent together with a
@@ -103,6 +137,7 @@ Useful optional executables:
 - =rg= for =consult-ripgrep=
 - =pi= for code analysis
 - =documd= (=npm install -g @markdown-viewer/documd=, needs Chrome) for diagrams
+- =node= (20 or newer) and local =pele= for Markdown Mermaid SVG
 - =aspell= or =hunspell= for spell checking
 
 Runtime state, backups, auto-save files, and native compilation output are

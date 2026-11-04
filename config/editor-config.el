@@ -307,6 +307,10 @@ in the reused buffer, whose cleanup can then prompt to kill that command."
   :ensure t
   :defer t)
 
+(use-package markdown-mermaid
+  :ensure nil
+  :hook (markdown-mode . frei/markdown-mermaid-mode))
+
 (use-package autorevert
   :ensure nil
   :init
