@@ -265,9 +265,8 @@ then runs `frei/project-tab-open-hook'.  No session file is written."
 
 ;;;###autoload
 (defun frei/project-switch-project (directory)
-  "Select DIRECTORY's project tab, then offer project.el's command menu."
+  "Open DIRECTORY's project tab directly, using `project-switch-commands'."
   (interactive (list (funcall project-prompter)))
-  (frei/project-switch-tab directory)
   (project-switch-project directory))
 
 ;;;###autoload

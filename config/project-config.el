@@ -4,10 +4,9 @@
 ;; The built-in project.el with project-tool.el: any folder can be a
 ;; project, and Emacs started without files shows the favorite and
 ;; recent projects.  F7 compiles and F9 opens Eshell in the project root;
-;; C-x p p opens the project's tab and sidebar, then offers its commands.
+;; C-x p p opens the project's tab and sidebar directly.
 
 ;;; Code:
-(require 'seq)
 (require 'project-tool)
 
 (defvar frei/state-directory)
@@ -64,17 +63,7 @@ the project instead of closing, which suits switching projects."
   :custom
   (project-list-file
    (expand-file-name "projects.eld" frei/state-directory))
-  ;; The menu after C-x p p.  Magit appears only when it is installed.
-  (project-switch-commands
-   (seq-filter (lambda (entry) (fboundp (car entry)))
-               '((project-find-file "Find file" ?f)
-                 (consult-ripgrep "Ripgrep" ?r)
-                 (consult-project-buffer "Buffer" ?b)
-                 (frei/project-sidebar "Sidebar" ?d)
-                 (magit-project-status "Magit" ?m)
-                 (project-eshell "Eshell" ?e)
-                 (project-compile "Compile" ?c)
-                 (project-any-command "Other" ?o))))
+  (project-switch-commands #'frei/project-switch-tab)
   :config
   ;; Added folders and favorites before version control, markers after.
   (add-hook 'project-find-functions #'frei/project-try-configured -50)

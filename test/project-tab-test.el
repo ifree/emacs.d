@@ -182,25 +182,17 @@
       (should (eq (current-buffer) file))
       (should (= (length (tab-bar-tabs)) 2)))))
 
-(ert-deftest frei/project-tab-switch-keeps-the-command-menu-in-the-target-tab ()
+(ert-deftest frei/project-tab-switch-opens-directly-without-command-menu ()
   (frei/project-tab-test--environment
     (let* ((root (frei/project-tab-test--project "alpha"))
-           (project-switch-commands '((ignore "Other" ?o)))
            (events nil)
            (frei/project-tab-open-hook
             (list (lambda () (push (list 'open (frei/project-tab-test--root)) events)))))
       (cl-letf (((symbol-function 'project--switch-project-command)
-                 (lambda (directory)
-                   (should (listp project-switch-commands))
-                   (push (list 'menu directory (frei/project-tab-test--root)) events)
-                   (lambda ()
-                     (interactive)
-                     (push (list 'command
-                                 (expand-file-name (project-root (project-current t))))
-                           events)))))
+                 (lambda (&rest _) (ert-fail "Unexpected project command menu"))))
         (frei/project-switch-project root)
-        (should (equal (nreverse events)
-                       `((open ,root) (menu ,root ,root) (command ,root)))))
+        (should (equal events `((open ,root))))
+        (should (equal (frei/project-tab-test--root) root)))
       (should-not (local-variable-p 'project-current-directory-override)))))
 
 (ert-deftest frei/project-tab-new-project-opens-the-sidebar-and-keeps-main-focus ()
@@ -210,7 +202,6 @@
            (b (frei/project-tab-test--project "beta"))
            (file-a (frei/project-tab-test--file a))
            (file-b (frei/project-tab-test--file b))
-           (project-switch-commands #'ignore)
            (frei/project-tab-open-hook '(frei/project-tab-sidebar)))
       (dolist (entry (list (cons a file-a) (cons b file-b) (cons a file-a)))
         (frei/project-switch-project (car entry))

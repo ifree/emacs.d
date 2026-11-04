@@ -66,6 +66,17 @@
 
 (add-hook 'prog-mode-hook #'frei/prog-mode-visuals)
 
+(defun frei/file-line-numbers ()
+  "Show line numbers in ordinary file buffers, including text and config files."
+  (when (and buffer-file-name
+             (not (derived-mode-p 'special-mode 'image-mode 'doc-view-mode
+                                  'pdf-view-mode 'so-long-mode))
+             (not (bound-and-true-p so-long-minor-mode)))
+    (display-line-numbers-mode 1)))
+
+(add-hook 'find-file-hook #'frei/file-line-numbers)
+(add-hook 'after-change-major-mode-hook #'frei/file-line-numbers)
+
 (electric-pair-mode 1)
 (delete-selection-mode 1)
 (repeat-mode 1)

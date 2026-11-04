@@ -25,6 +25,11 @@ In-buffer completion is provided by Corfu.
 
 Packages are installed through GNU ELPA, NonGNU ELPA, and MELPA on first use.
 
+Ordinary file buffers show absolute line numbers, including Markdown,
+plain text, configuration files, and files with no recognized major mode.
+Directories, sidebars, image/document viewers, and buffers handled by
+=so-long-mode= use their usual display.
+
 * Projects
 
 Projects are handled by the built-in =project.el=, extended by
@@ -40,10 +45,8 @@ listed with =rg=, leaving out =node_modules=, =build=, the =Intermediate=,
 similar build output; the 196,000 files of Unreal Engine 5.8 take a
 third of a second.
 
-=C-x p p= selects a project's =tab-bar= tab, then offers the project
-commands: =f= file, =r= ripgrep, =b= buffer, =d= sidebar, =m= Magit,
-=e= Eshell, =c= compile, =o= any other command.  An already open project
-reuses its tab; a new one shows an existing project file buffer,
+=C-x p p= selects a project's =tab-bar= tab directly.  An already open
+project reuses its tab; a new one shows an existing project file buffer,
 another project buffer, or its root directory, with the sidebar open
 and the main window selected.
 Projects are matched by their full root path, so equally named folders
